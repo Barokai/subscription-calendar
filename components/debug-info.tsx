@@ -1,47 +1,56 @@
 "use client";
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 const DebugInfo: React.FC = () => {
-  const [windowSize, setWindowSize] = useState({ width: 0, height: 0 });
-  const [info, setInfo] = useState<Record<string, any>>({});
-  
+  const [isDebugMode, setIsDebugMode] = useState(false);
+  const [debugInfo, setDebugInfo] = useState<Record<string, any>>({});
+
   useEffect(() => {
-    // Update window size
-    const updateWindowSize = () => {
-      setWindowSize({ width: window.innerWidth, height: window.innerHeight });
-    };
-    
-    // Collect debug info
-    const collectInfo = () => {
-      setInfo({
+    // Check if we should show debug info
+    const urlParams = new URLSearchParams(window.location.search);
+    const debug = urlParams.get('debug') === 'true';
+    setIsDebugMode(debug);
+
+    if (debug) {
+      // Collect debug information
+      const info = {
+        url: window.location.href,
         userAgent: navigator.userAgent,
-        platform: navigator.platform,
-        language: navigator.language,
-        darkMode: window.matchMedia('(prefers-color-scheme: dark)').matches,
-        localStorage: typeof localStorage !== 'undefined',
-        sessionStorage: typeof sessionStorage !== 'undefined',
+        screenSize: `${window.innerWidth}x${window.innerHeight}`,
+        localStorage: {},
+        queryParams: {}
+      };
+
+      // Get localStorage items (safely)
+      try {
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (key) {
+            const value = localStorage.getItem(key);
+            info.localStorage[key] = value;
+          }
+        }
+      } catch (error) {
+        info.localStorage = { error: 'Unable to access localStorage' };
+      }
+
+      // Get query parameters
+      urlParams.forEach((value, key) => {
+        info.queryParams[key] = value;
       });
-    };
-    
-    window.addEventListener('resize', updateWindowSize);
-    updateWindowSize();
-    collectInfo();
-    
-    return () => window.removeEventListener('resize', updateWindowSize);
+
+      setDebugInfo(info);
+    }
   }, []);
-  
+
+  if (!isDebugMode) return null;
+
   return (
-    <div className="fixed bottom-4 right-4 bg-black bg-opacity-80 text-white p-4 rounded-lg text-xs max-w-xs z-50">
-      <h4 className="font-bold mb-2">Debug Info:</h4>
-      <div>
-        <div>Window: {windowSize.width}x{windowSize.height}</div>
-        {Object.entries(info).map(([key, value]) => (
-          <div key={key}>
-            {key}: {typeof value === 'boolean' ? value.toString() : String(value)}
-          </div>
-        ))}
-        <div className="mt-2 text-green-400">React is working!</div>
-      </div>
+    <div className="bg-gray-900 text-green-400 p-4 mb-4 rounded-lg font-mono text-xs">
+      <h2 className="text-lg mb-2">Debug Information</h2>
+      <pre className="overflow-auto max-h-48">
+        {JSON.stringify(debugInfo, null, 2)}
+      </pre>
     </div>
   );
 };

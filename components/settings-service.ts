@@ -5,13 +5,15 @@ export interface CalendarSettings {
   apiKey?: string;
   locale: string;
   isDarkMode: boolean;
+  demoMode?: boolean;
 }
 
 const STORAGE_KEYS = {
   SPREADSHEET_ID: 'subscriptionCalendarSpreadsheetId',
   API_KEY: 'subscriptionCalendarApiKey',
   LOCALE: 'subscriptionCalendarLocale',
-  DARK_MODE: 'subscriptionCalendarDarkMode'
+  DARK_MODE: 'subscriptionCalendarDarkMode',
+  DEMO_MODE: 'subscriptionCalendarDemoMode'
 };
 
 export const loadSettings = (): CalendarSettings => {
@@ -22,6 +24,10 @@ export const loadSettings = (): CalendarSettings => {
       isDarkMode: true
     };
   }
+  
+  // Check URL for demo param
+  const urlParams = new URLSearchParams(window.location.search);
+  const demoParam = urlParams.get('demo');
   
   const spreadsheetId = localStorage.getItem(STORAGE_KEYS.SPREADSHEET_ID) || undefined;
   const apiKey = localStorage.getItem(STORAGE_KEYS.API_KEY) || undefined;
@@ -35,11 +41,15 @@ export const loadSettings = (): CalendarSettings => {
   const darkModeValue = localStorage.getItem(STORAGE_KEYS.DARK_MODE);
   const isDarkMode = darkModeValue !== null ? darkModeValue === 'true' : true;
   
+  // Check for demo mode
+  const demoMode = demoParam === 'true' || localStorage.getItem(STORAGE_KEYS.DEMO_MODE) === 'true';
+  
   return {
     spreadsheetId,
     apiKey,
     locale,
-    isDarkMode
+    isDarkMode,
+    demoMode
   };
 };
 
@@ -63,6 +73,10 @@ export const saveSettings = (settings: Partial<CalendarSettings>): void => {
   if (settings.isDarkMode !== undefined) {
     localStorage.setItem(STORAGE_KEYS.DARK_MODE, settings.isDarkMode.toString());
   }
+  
+  if (settings.demoMode !== undefined) {
+    localStorage.setItem(STORAGE_KEYS.DEMO_MODE, settings.demoMode.toString());
+  }
 };
 
 export const isConnected = (): boolean => {
@@ -74,4 +88,15 @@ export const isConnected = (): boolean => {
     localStorage.getItem(STORAGE_KEYS.SPREADSHEET_ID) && 
     localStorage.getItem(STORAGE_KEYS.API_KEY)
   );
+};
+
+export const isDemoMode = (): boolean => {
+  if (typeof window === 'undefined') {
+    return false;
+  }
+
+  const urlParams = new URLSearchParams(window.location.search);
+  const demoParam = urlParams.get('demo');
+  
+  return demoParam === 'true' || localStorage.getItem(STORAGE_KEYS.DEMO_MODE) === 'true';
 };
