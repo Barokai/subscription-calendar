@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 
 const SubscriptionCalendar = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -9,6 +9,9 @@ const SubscriptionCalendar = () => {
   const [isDarkMode, setIsDarkMode] = useState(true);
   const [userLocale, setUserLocale] = useState(navigator.language || 'en-US');
   const [isConnected, setIsConnected] = useState(false);
+  const [hoverPosition, setHoverPosition] = useState({ x: 0, y: 0 });
+  const [hoveredSubscription, setHoveredSubscription] = useState(null);
+  const hoverTimeoutRef = useRef(null);
   
   // Mock data for initial display
   const mockData = [
@@ -237,9 +240,9 @@ const SubscriptionCalendar = () => {
     return weekdays;
   };
 
-  // Setup component (now collapsible)
+  // Setup component (now collapsible with improved styling)
   const SetupInstructions = () => (
-    <div className={`p-6 rounded-lg mb-4 ${isDarkMode ? 'bg-gray-800 text-white' : 'bg-white text-gray-800'}`}>
+    <div className={`p-6 rounded-lg mb-4 shadow-lg max-w-3xl mx-auto ${isDarkMode ? 'bg-gray-800 text-white' : 'bg-white text-gray-800'}`}>
       <h2 className="text-2xl font-bold mb-4">Google Sheets Integration Setup</h2>
       
       <div className="mb-6">
@@ -276,32 +279,32 @@ const SubscriptionCalendar = () => {
         saveSettings(spreadsheetId, apiKey, locale);
       }}>
         <div>
-          <label className="block mb-1">Spreadsheet ID:</label>
+          <label className="block mb-1 font-medium">Spreadsheet ID:</label>
           <input 
             type="text" 
             name="spreadsheetId" 
-            className="w-full p-2 border rounded bg-gray-700 text-white" 
+            className={`w-full p-2 border-2 rounded-md ${isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-800'}`}
             placeholder="e.g., 1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms"
             required
           />
         </div>
         
         <div>
-          <label className="block mb-1">API Key:</label>
+          <label className="block mb-1 font-medium">API Key:</label>
           <input 
             type="text" 
             name="apiKey" 
-            className="w-full p-2 border rounded bg-gray-700 text-white" 
+            className={`w-full p-2 border-2 rounded-md ${isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-800'}`}
             placeholder="e.g., AIzaSyBJH3s..."
             required
           />
         </div>
         
         <div>
-          <label className="block mb-1">Locale:</label>
+          <label className="block mb-1 font-medium">Locale:</label>
           <select 
             name="locale" 
-            className="w-full p-2 border rounded bg-gray-700 text-white"
+            className={`w-full p-2 border-2 rounded-md ${isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-800'}`}
             defaultValue={userLocale}
           >
             <option value="en-US">English (US)</option>
@@ -318,7 +321,7 @@ const SubscriptionCalendar = () => {
         <div className="flex gap-2">
           <button 
             type="submit"
-            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 flex-1"
+            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 flex-1 transition-colors"
           >
             Connect
           </button>
@@ -326,7 +329,7 @@ const SubscriptionCalendar = () => {
           <button 
             type="button"
             onClick={() => setSetupVisible(false)}
-            className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700"
+            className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 transition-colors"
           >
             Cancel
           </button>
@@ -335,8 +338,8 @@ const SubscriptionCalendar = () => {
     </div>
   );
 
-  // Subscription detail popup component
-  const SubscriptionDetail = ({ subscription, onClose }) => {
+  // Subscription detail popup component (now positioned near hover)
+  const SubscriptionDetail = ({ subscription, position }) => {
     if (!subscription) return null;
     
     const nextPaymentDate = new Date();
@@ -352,44 +355,63 @@ const SubscriptionCalendar = () => {
     });
     
     return (
-      <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50">
-        <div className={`rounded-lg p-4 max-w-md w-full ${isDarkMode ? 'bg-gray-900 text-white' : 'bg-white text-gray-800'}`}
-          style={{ border: `2px solid ${subscription.color}` }}
-        >
-          <div className="flex items-center mb-4">
-            <div className="w-10 h-10 rounded-full flex items-center justify-center mr-3" 
-              style={{ backgroundColor: subscription.color }}>
-              <span className="text-white font-bold text-lg">{subscription.logo}</span>
-            </div>
-            <h3 className="text-xl font-bold">{subscription.name}</h3>
-            <div className="ml-auto text-xl font-bold">
-              {subscription.amount.toLocaleString(userLocale, { 
-                style: 'currency', 
-                currency: subscription.currency.replace('€', 'EUR') || 'EUR' 
-              })}
-            </div>
+      <div 
+        className={`absolute z-50 shadow-xl rounded-lg p-4 max-w-xs w-full ${isDarkMode ? 'bg-gray-800 text-white' : 'bg-white text-gray-800'}`}
+        style={{ 
+          left: `${position.x}px`, 
+          top: `${position.y}px`,
+          border: `2px solid ${subscription.color}`,
+          transform: 'translate(-50%, -110%)'
+        }}
+      >
+        <div className="flex items-center mb-4">
+          <div className="w-8 h-8 rounded-full flex items-center justify-center mr-3" 
+            style={{ backgroundColor: subscription.color }}>
+            <span className="text-white font-bold text-sm">{subscription.logo}</span>
           </div>
-          
-          <div className="space-y-2 mb-4">
-            <div className="flex justify-between">
-              <span>Every {subscription.dayOfMonth}th</span>
-              <span>Next payment: {formattedNextPayment}</span>
-            </div>
-            <div className="flex justify-between">
-              <span>Total since {new Date(subscription.startDate).toLocaleDateString(userLocale)}</span>
-              <span>{calculateTotalSpent(subscription)}</span>
-            </div>
+          <h3 className="text-lg font-bold">{subscription.name}</h3>
+          <div className="ml-auto text-lg font-bold">
+            {subscription.amount.toLocaleString(userLocale, { 
+              style: 'currency', 
+              currency: subscription.currency.replace('€', 'EUR') || 'EUR' 
+            })}
           </div>
-          
-          <button 
-            onClick={onClose}
-            className="w-full py-2 bg-gray-700 hover:bg-gray-600 text-white rounded"
-          >
-            Close
-          </button>
+        </div>
+        
+        <div className="space-y-2 mb-2 text-sm">
+          <div className="flex justify-between">
+            <span>Every {subscription.dayOfMonth}th</span>
+            <span>Next: {formattedNextPayment}</span>
+          </div>
+          <div className="flex justify-between">
+            <span>Since {new Date(subscription.startDate).toLocaleDateString(userLocale)}</span>
+            <span>{calculateTotalSpent(subscription)}</span>
+          </div>
         </div>
       </div>
     );
+  };
+
+  const handleSubscriptionHover = (subscription, event) => {
+    // Clear any existing timeout
+    if (hoverTimeoutRef.current) {
+      clearTimeout(hoverTimeoutRef.current);
+    }
+    
+    // Set a small timeout to prevent flickering on quick mouse movements
+    hoverTimeoutRef.current = setTimeout(() => {
+      setHoveredSubscription(subscription);
+      setHoverPosition({ x: event.clientX, y: event.clientY });
+    }, 100);
+  };
+
+  const handleSubscriptionLeave = () => {
+    if (hoverTimeoutRef.current) {
+      clearTimeout(hoverTimeoutRef.current);
+    }
+    hoverTimeoutRef.current = setTimeout(() => {
+      setHoveredSubscription(null);
+    }, 300);
   };
 
   // UI for when data is loaded
@@ -405,7 +427,7 @@ const SubscriptionCalendar = () => {
 
   if (error) {
     return (
-      <div className={`p-4 ${isDarkMode ? 'bg-gray-900 text-white' : 'bg-white text-gray-800'}`}>
+      <div className={`p-4 max-w-3xl mx-auto ${isDarkMode ? 'bg-gray-900 text-white' : 'bg-white text-gray-800'}`}>
         <div className="bg-red-500 text-white p-4 rounded mb-4">
           {error}
         </div>
@@ -423,119 +445,134 @@ const SubscriptionCalendar = () => {
   }
 
   return (
-    <div className={`max-w-4xl mx-auto ${isDarkMode ? 'bg-gray-900 text-white' : 'bg-white text-gray-800'}`}>
-      {selectedSubscription && (
-        <SubscriptionDetail 
-          subscription={selectedSubscription} 
-          onClose={() => setSelectedSubscription(null)} 
-        />
-      )}
-      
-      {setupVisible && <SetupInstructions />}
-      
-      <div className="p-4">
-        <div className="flex justify-between items-center mb-4">
-          <div className="flex items-center">
-            <button 
-              onClick={() => navigateMonth(-1)}
-              className="w-10 h-10 rounded-full flex items-center justify-center mr-2 bg-gray-800 text-white"
-            >
-              &lt;
-            </button>
-            <button 
-              onClick={() => navigateMonth(1)}
-              className="w-10 h-10 rounded-full flex items-center justify-center mr-4 bg-gray-800 text-white"
-            >
-              &gt;
-            </button>
-            <h1 className="text-2xl font-bold">
-              {getMonthName(currentDate.getMonth())} {currentDate.getFullYear()}
-            </h1>
+    <div className="flex justify-center items-start min-h-screen py-8">
+      <div className={`max-w-3xl w-full mx-auto ${isDarkMode ? 'bg-gray-900 text-white' : 'bg-white text-gray-800'} rounded-lg shadow-lg relative`}>
+        {selectedSubscription && (
+          <SubscriptionDetail 
+            subscription={selectedSubscription} 
+            position={hoverPosition}
+            onClose={() => setSelectedSubscription(null)} 
+          />
+        )}
+        
+        {hoveredSubscription && (
+          <SubscriptionDetail 
+            subscription={hoveredSubscription}
+            position={hoverPosition}
+          />
+        )}
+        
+        {setupVisible && <SetupInstructions />}
+        
+        <div className="p-6">
+          <div className="flex justify-between items-center mb-6">
+            <div className="flex items-center">
+              <button 
+                onClick={() => navigateMonth(-1)}
+                className="w-10 h-10 rounded-full flex items-center justify-center mr-2 bg-gray-800 text-white hover:bg-gray-700 transition-colors"
+              >
+                &lt;
+              </button>
+              <button 
+                onClick={() => navigateMonth(1)}
+                className="w-10 h-10 rounded-full flex items-center justify-center mr-4 bg-gray-800 text-white hover:bg-gray-700 transition-colors"
+              >
+                &gt;
+              </button>
+              <h1 className="text-2xl font-bold">
+                {getMonthName(currentDate.getMonth())} {currentDate.getFullYear()}
+              </h1>
+            </div>
+            
+            <div className="flex items-center">
+              <div className="text-right">
+                <div className="text-sm text-gray-400">Monthly spend</div>
+                <div className="text-2xl font-bold">{calculateMonthlyTotal()}</div>
+              </div>
+              <button 
+                onClick={toggleDarkMode}
+                className="ml-4 p-2 rounded-full hover:bg-gray-700 transition-colors"
+                aria-label={isDarkMode ? "Switch to light mode" : "Switch to dark mode"}
+              >
+                {isDarkMode ? "☀️" : "🌙"}
+              </button>
+              <button 
+                onClick={() => setSetupVisible(!setupVisible)}
+                className="ml-2 p-2 rounded-full hover:bg-gray-700 transition-colors"
+                aria-label="Settings"
+              >
+                ⚙️
+              </button>
+            </div>
           </div>
           
-          <div className="flex items-center">
-            <div className="text-right">
-              <div className="text-sm text-gray-400">Monthly spend</div>
-              <div className="text-2xl font-bold">{calculateMonthlyTotal()}</div>
-            </div>
-            <button 
-              onClick={toggleDarkMode}
-              className="ml-4 p-2 rounded-full hover:bg-gray-700"
-              aria-label={isDarkMode ? "Switch to light mode" : "Switch to dark mode"}
-            >
-              {isDarkMode ? "☀️" : "🌙"}
-            </button>
-            <button 
-              onClick={() => setSetupVisible(!setupVisible)}
-              className="ml-2 p-2 rounded-full hover:bg-gray-700"
-              aria-label="Settings"
-            >
-              ⚙️
-            </button>
-          </div>
-        </div>
-        
-        {isConnected && (
-          <div className="mb-2 p-2 bg-green-800 bg-opacity-20 border border-green-600 rounded-md text-green-400 flex items-center">
-            <span className="mr-2">✓</span>
-            <span>Connected to Google Sheets</span>
-            <button 
-              onClick={() => setSetupVisible(true)}
-              className="ml-auto text-xs underline"
-            >
-              Change settings
-            </button>
-          </div>
-        )}
-        
-        {!isConnected && !setupVisible && (
-          <div className="mb-2 p-2 bg-blue-800 bg-opacity-20 border border-blue-600 rounded-md text-blue-400 flex items-center">
-            <span className="mr-2">ℹ️</span>
-            <span>Using demo data. Connect to Google Sheets for your own subscriptions.</span>
-            <button 
-              onClick={() => setSetupVisible(true)}
-              className="ml-auto text-xs underline"
-            >
-              Setup connection
-            </button>
-          </div>
-        )}
-        
-        <div className="grid grid-cols-7 mb-1">
-          {getWeekdayNames().map(day => (
-            <div key={day} className="text-center p-2 font-medium bg-gray-800 text-gray-300 rounded-md mx-1">
-              {day}
-            </div>
-          ))}
-        </div>
-        
-        <div className="grid grid-cols-7 gap-1">
-          {renderCalendar().map((dayObj, index) => {
-            const daySubscriptions = dayObj.isCurrentMonth ? getSubscriptionsForDay(dayObj.day) : [];
-            const isGrayed = !dayObj.isCurrentMonth;
-            
-            return (
-              <div 
-                key={`${dayObj.year}-${dayObj.month}-${dayObj.day}-${index}`}
-                className={`aspect-square rounded-md flex flex-col p-2 ${isDarkMode ? 'bg-gray-800' : 'bg-gray-100'} ${isGrayed ? 'opacity-40' : ''} ${dayObj.isToday ? 'ring-2 ring-blue-500' : ''}`}
+          {isConnected && (
+            <div className="mb-4 p-2 bg-green-800 bg-opacity-20 border border-green-600 rounded-md text-green-400 flex items-center">
+              <span className="mr-2">✓</span>
+              <span>Connected to Google Sheets</span>
+              <button 
+                onClick={() => setSetupVisible(true)}
+                className="ml-auto text-xs underline"
               >
-                <div className="text-right font-medium mb-1">{dayObj.day}</div>
-                <div className="flex flex-wrap gap-1 justify-center">
-                  {daySubscriptions.map(subscription => (
-                    <button
-                      key={subscription.id}
-                      onClick={() => setSelectedSubscription(subscription)}
-                      className="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold"
-                      style={{ backgroundColor: subscription.color }}
-                      title={subscription.name}
-                    >
-                      {subscription.logo}
-                    </button>
-                  ))}
-                </div>
+                Change settings
+              </button>
+            </div>
+          )}
+          
+          {!isConnected && !setupVisible && (
+            <div className="mb-4 p-2 bg-blue-800 bg-opacity-20 border border-blue-600 rounded-md text-blue-400 flex items-center">
+              <span className="mr-2">ℹ️</span>
+              <span>Using demo data. Connect to Google Sheets for your own subscriptions.</span>
+              <button 
+                onClick={() => setSetupVisible(true)}
+                className="ml-auto text-xs underline"
+              >
+                Setup connection
+              </button>
+            </div>
+          )}
+          
+          <div className="grid grid-cols-7 mb-2">
+            {getWeekdayNames().map(day => (
+              <div key={day} className="text-center p-2 font-medium bg-gray-800 text-gray-300 rounded-md mx-0.5">
+                {day}
               </div>
-            );
-          })}
+            ))}
+          </div>
+          
+          <div className="grid grid-cols-7 gap-1">
+            {renderCalendar().map((dayObj, index) => {
+              const daySubscriptions = dayObj.isCurrentMonth ? getSubscriptionsForDay(dayObj.day) : [];
+              const isGrayed = !dayObj.isCurrentMonth;
+              
+              return (
+                <div 
+                  key={`${dayObj.year}-${dayObj.month}-${dayObj.day}-${index}`}
+                  className={`aspect-square rounded-md flex flex-col p-2 ${isDarkMode ? 'bg-gray-800' : 'bg-gray-100'} ${isGrayed ? 'opacity-40' : ''} ${dayObj.isToday ? 'ring-2 ring-blue-500' : ''}`}
+                >
+                  <div className="text-right font-medium mb-1">{dayObj.day}</div>
+                  <div className="flex flex-wrap gap-1 justify-center">
+                    {daySubscriptions.map(subscription => (
+                      <div
+                        key={subscription.id}
+                        onMouseEnter={(e) => handleSubscriptionHover(subscription, e)}
+                        onMouseLeave={handleSubscriptionLeave}
+                        onClick={(e) => {
+                          setSelectedSubscription(subscription);
+                          setHoverPosition({ x: e.clientX, y: e.clientY });
+                        }}
+                        className="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold cursor-pointer hover:scale-110 transition-transform"
+                        style={{ backgroundColor: subscription.color }}
+                        title={subscription.name}
+                      >
+                        {subscription.logo}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
       </div>
     </div>
