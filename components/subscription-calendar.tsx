@@ -1,4 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import SetupInstructions from './setup-instructions';
+import SubscriptionDetail from './subscription-detail';
+import { loadSettings, saveSettings as saveSettingsToStorage, isConnected as checkConnection } from './settings-service';
 
 const SubscriptionCalendar = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -7,10 +10,11 @@ const SubscriptionCalendar = () => {
   const [error, setError] = useState(null);
   const [setupVisible, setSetupVisible] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(true);
-  const [userLocale, setUserLocale] = useState(navigator.language || 'en-US');
+  const [userLocale, setUserLocale] = useState('en-US');
   const [isConnected, setIsConnected] = useState(false);
   const [hoverPosition, setHoverPosition] = useState({ x: 0, y: 0 });
   const [hoveredSubscription, setHoveredSubscription] = useState(null);
+  const [selectedSubscription, setSelectedSubscription] = useState(null);
   const hoverTimeoutRef = useRef(null);
   
   // Mock data for initial display
@@ -76,14 +80,10 @@ const SubscriptionCalendar = () => {
   const fetchFromGoogleSheets = useCallback(async (spreadsheetId, apiKey) => {
     try {
       setLoading(true);
-      // In a real implementation, this would make an actual API call
-      // For demo purposes, we're simulating the API response
-      
       // Simulate API delay
       await new Promise(resolve => setTimeout(resolve, 1000));
       
       // In a real implementation, this would fetch actual data from Google Sheets
-      // For now, use the same mock data but mark as connected
       setSubscriptions(mockData);
       setIsConnected(true);
       setLoading(false);
@@ -94,35 +94,32 @@ const SubscriptionCalendar = () => {
   }, []);
 
   useEffect(() => {
-    // Try to get saved spreadsheet ID and API key from localStorage
-    const savedSpreadsheetId = localStorage.getItem('subscriptionCalendarSpreadsheetId');
-    const savedApiKey = localStorage.getItem('subscriptionCalendarApiKey');
+    // Load settings from local storage
+    const settings = loadSettings();
+    setUserLocale(settings.locale);
+    setIsDarkMode(settings.isDarkMode);
     
-    if (savedSpreadsheetId && savedApiKey) {
-      fetchFromGoogleSheets(savedSpreadsheetId, savedApiKey);
+    // Check if we have connection details
+    const connected = checkConnection();
+    setIsConnected(connected);
+    
+    if (connected && settings.spreadsheetId && settings.apiKey) {
+      fetchFromGoogleSheets(settings.spreadsheetId, settings.apiKey);
     } else {
       // Use mock data instead of showing setup by default
       setSubscriptions(mockData);
       setLoading(false);
     }
-    
-    // Try to get user's locale preference
-    const savedLocale = localStorage.getItem('subscriptionCalendarLocale');
-    if (savedLocale) {
-      setUserLocale(savedLocale);
-    }
-    
-    // Try to get dark mode preference
-    const savedDarkMode = localStorage.getItem('subscriptionCalendarDarkMode');
-    if (savedDarkMode !== null) {
-      setIsDarkMode(savedDarkMode === 'true');
-    }
   }, [fetchFromGoogleSheets]);
 
-  const saveSettings = (spreadsheetId, apiKey, locale) => {
-    localStorage.setItem('subscriptionCalendarSpreadsheetId', spreadsheetId);
-    localStorage.setItem('subscriptionCalendarApiKey', apiKey);
-    localStorage.setItem('subscriptionCalendarLocale', locale);
+  const handleSaveSettings = (spreadsheetId, apiKey, locale) => {
+    // Save settings to local storage
+    saveSettingsToStorage({
+      spreadsheetId,
+      apiKey,
+      locale
+    });
+    
     setUserLocale(locale);
     fetchFromGoogleSheets(spreadsheetId, apiKey);
     setSetupVisible(false);
@@ -131,9 +128,10 @@ const SubscriptionCalendar = () => {
   const toggleDarkMode = () => {
     const newMode = !isDarkMode;
     setIsDarkMode(newMode);
-    localStorage.setItem('subscriptionCalendarDarkMode', newMode.toString());
+    saveSettingsToStorage({ isDarkMode: newMode });
   };
 
+  // Calendar helper functions
   const getDaysInMonth = (year, month) => {
     return new Date(year, month + 1, 0).getDate();
   };
@@ -240,159 +238,6 @@ const SubscriptionCalendar = () => {
     return weekdays;
   };
 
-  // Setup component (now collapsible with improved styling)
-  const SetupInstructions = () => (
-    <div className={`p-6 rounded-lg mb-4 shadow-lg max-w-3xl mx-auto ${isDarkMode ? 'bg-gray-800 text-white' : 'bg-white text-gray-800'}`}>
-      <h2 className="text-2xl font-bold mb-4">Google Sheets Integration Setup</h2>
-      
-      <div className="mb-6">
-        <h3 className="text-xl font-semibold mb-2">Step 1: Create a Google Sheet</h3>
-        <p className="mb-3">Create a Google Sheet with the following columns:</p>
-        <ul className="list-disc ml-6 mb-4">
-          <li>name - The subscription name (e.g., Netflix)</li>
-          <li>amount - The cost of the subscription</li>
-          <li>currency - The currency symbol (e.g., €)</li>
-          <li>frequency - How often the subscription renews (e.g., monthly)</li>
-          <li>dayOfMonth - The day of the month when payment is due</li>
-          <li>color - The brand color in hex format (e.g., #E50914 for Netflix)</li>
-          <li>logo - A letter or short text to represent the logo</li>
-          <li>startDate - When you first subscribed (YYYY-MM-DD format)</li>
-        </ul>
-      </div>
-      
-      <div className="mb-6">
-        <h3 className="text-xl font-semibold mb-2">Step 2: Enable Google Sheets API</h3>
-        <ol className="list-decimal ml-6 mb-4">
-          <li>Go to the <a href="https://console.developers.google.com/" target="_blank" rel="noopener noreferrer" className="text-blue-400 underline">Google Developers Console</a></li>
-          <li>Create a new project or select an existing one</li>
-          <li>Enable the Google Sheets API</li>
-          <li>Create an API key</li>
-          <li>Copy your API key and spreadsheet ID (the long string in your spreadsheet URL)</li>
-        </ol>
-      </div>
-      
-      <form className="space-y-4" onSubmit={(e) => {
-        e.preventDefault();
-        const spreadsheetId = e.target.spreadsheetId.value;
-        const apiKey = e.target.apiKey.value;
-        const locale = e.target.locale.value;
-        saveSettings(spreadsheetId, apiKey, locale);
-      }}>
-        <div>
-          <label className="block mb-1 font-medium">Spreadsheet ID:</label>
-          <input 
-            type="text" 
-            name="spreadsheetId" 
-            className={`w-full p-2 border-2 rounded-md ${isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-800'}`}
-            placeholder="e.g., 1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms"
-            required
-          />
-        </div>
-        
-        <div>
-          <label className="block mb-1 font-medium">API Key:</label>
-          <input 
-            type="text" 
-            name="apiKey" 
-            className={`w-full p-2 border-2 rounded-md ${isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-800'}`}
-            placeholder="e.g., AIzaSyBJH3s..."
-            required
-          />
-        </div>
-        
-        <div>
-          <label className="block mb-1 font-medium">Locale:</label>
-          <select 
-            name="locale" 
-            className={`w-full p-2 border-2 rounded-md ${isDarkMode ? 'bg-gray-800 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-800'}`}
-            defaultValue={userLocale}
-            style={{ backgroundColor: isDarkMode ? '#1f2937' : 'white' }}
-          >
-            <option value="en-US">English (US)</option>
-            <option value="en-GB">English (UK)</option>
-            <option value="de-DE">German</option>
-            <option value="fr-FR">French</option>
-            <option value="es-ES">Spanish</option>
-            <option value="it-IT">Italian</option>
-            <option value="ja-JP">Japanese</option>
-            <option value="zh-CN">Chinese</option>
-          </select>
-        </div>
-        
-        <div className="flex gap-2">
-          <button 
-            type="submit"
-            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 flex-1 transition-colors"
-          >
-            Connect
-          </button>
-          
-          <button 
-            type="button"
-            onClick={() => setSetupVisible(false)}
-            className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 transition-colors"
-          >
-            Cancel
-          </button>
-        </div>
-      </form>
-    </div>
-  );
-
-  // Subscription detail popup component (now positioned near hover)
-  const SubscriptionDetail = ({ subscription, position }) => {
-    if (!subscription) return null;
-    
-    const nextPaymentDate = new Date();
-    if (nextPaymentDate.getDate() > subscription.dayOfMonth) {
-      nextPaymentDate.setMonth(nextPaymentDate.getMonth() + 1);
-    }
-    nextPaymentDate.setDate(subscription.dayOfMonth);
-    
-    const formattedNextPayment = nextPaymentDate.toLocaleDateString(userLocale, { 
-      year: 'numeric', 
-      month: '2-digit', 
-      day: '2-digit' 
-    });
-    
-    return (
-      <div 
-        className={`absolute z-50 shadow-xl rounded-lg p-4 max-w-xs w-full ${isDarkMode ? 'bg-gray-800 text-white' : 'bg-white text-gray-800'}`}
-        style={{ 
-          left: `${position.x}px`, 
-          top: `${position.y}px`,
-          border: `2px solid ${subscription.color}`,
-          transform: 'translate(-50%, -110%)'
-        }}
-      >
-        <div className="flex items-center mb-4">
-          <div className="w-8 h-8 rounded-full flex items-center justify-center mr-3" 
-            style={{ backgroundColor: subscription.color }}>
-            <span className="text-white font-bold text-sm">{subscription.logo}</span>
-          </div>
-          <h3 className="text-lg font-bold">{subscription.name}</h3>
-          <div className="ml-auto text-lg font-bold">
-            {subscription.amount.toLocaleString(userLocale, { 
-              style: 'currency', 
-              currency: subscription.currency.replace('€', 'EUR') || 'EUR' 
-            })}
-          </div>
-        </div>
-        
-        <div className="space-y-2 mb-2 text-sm">
-          <div className="flex justify-between">
-            <span>Every {subscription.dayOfMonth}th</span>
-            <span>Next: {formattedNextPayment}</span>
-          </div>
-          <div className="flex justify-between">
-            <span>Since {new Date(subscription.startDate).toLocaleDateString(userLocale)}</span>
-            <span>{calculateTotalSpent(subscription)}</span>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
   const handleSubscriptionHover = (subscription, event) => {
     // Clear any existing timeout
     if (hoverTimeoutRef.current) {
@@ -414,9 +259,6 @@ const SubscriptionCalendar = () => {
       setHoveredSubscription(null);
     }, 300);
   };
-
-  // UI for when data is loaded
-  const [selectedSubscription, setSelectedSubscription] = useState(null);
 
   if (loading) {
     return (
@@ -452,18 +294,30 @@ const SubscriptionCalendar = () => {
           <SubscriptionDetail 
             subscription={selectedSubscription} 
             position={hoverPosition}
-            onClose={() => setSelectedSubscription(null)} 
+            isDarkMode={isDarkMode}
+            userLocale={userLocale}
+            calculateTotalSpent={calculateTotalSpent}
           />
         )}
         
-        {hoveredSubscription && (
+        {hoveredSubscription && !selectedSubscription && (
           <SubscriptionDetail 
             subscription={hoveredSubscription}
             position={hoverPosition}
+            isDarkMode={isDarkMode}
+            userLocale={userLocale}
+            calculateTotalSpent={calculateTotalSpent}
           />
         )}
-        
-        {setupVisible && <SetupInstructions />}
+
+        {setupVisible && (
+          <SetupInstructions 
+            isDarkMode={isDarkMode}
+            userLocale={userLocale}
+            onSaveSettings={handleSaveSettings}
+            onCancel={() => setSetupVisible(false)}
+          />
+        )}
         
         <div className="p-6">
           <div className="flex justify-between items-center mb-6">
@@ -559,7 +413,7 @@ const SubscriptionCalendar = () => {
                         onMouseEnter={(e) => handleSubscriptionHover(subscription, e)}
                         onMouseLeave={handleSubscriptionLeave}
                         onClick={(e) => {
-                          setSelectedSubscription(subscription);
+                          setSelectedSubscription(subscription === selectedSubscription ? null : subscription);
                           setHoverPosition({ x: e.clientX, y: e.clientY });
                         }}
                         className="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold cursor-pointer hover:scale-110 transition-transform"
