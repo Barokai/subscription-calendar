@@ -304,8 +304,9 @@ const SubscriptionCalendar = () => {
           <label className="block mb-1 font-medium">Locale:</label>
           <select 
             name="locale" 
-            className={`w-full p-2 border-2 rounded-md ${isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-800'}`}
+            className={`w-full p-2 border-2 rounded-md ${isDarkMode ? 'bg-gray-800 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-800'}`}
             defaultValue={userLocale}
+            style={{ backgroundColor: isDarkMode ? '#1f2937' : 'white' }}
           >
             <option value="en-US">English (US)</option>
             <option value="en-GB">English (UK)</option>
