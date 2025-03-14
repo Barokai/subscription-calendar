@@ -383,6 +383,9 @@ const SubscriptionCalendar: React.FC = () => {
   };
 
   const handleSubscriptionHover = (subscription: Subscription, event: MouseEvent): void => {
+    // Only handle hover if nothing is selected
+    if (selectedSubscription) return;
+    
     // Clear any existing timeout
     if (hoverTimeoutRef.current !== null) {
       window.clearTimeout(hoverTimeoutRef.current);
@@ -391,29 +394,70 @@ const SubscriptionCalendar: React.FC = () => {
     // Set a small timeout to prevent flickering on quick mouse movements
     hoverTimeoutRef.current = window.setTimeout(() => {
       setHoveredSubscription(subscription);
-      // Calculate position to ensure detail box stays within viewport
-      const viewportWidth = window.innerWidth;
-      const viewportHeight = window.innerHeight;
-      const boxWidth = 320; // Estimate of detail box width
-      const boxHeight = 200; // Estimate of detail box height
-      
-      let x = event.clientX;
-      let y = event.clientY;
-      
-      // Adjust position if it would go off-screen
-      if (x + boxWidth > viewportWidth) {
-        x = viewportWidth - boxWidth - 20;
-      }
-      
-      if (y + boxHeight > viewportHeight) {
-        y = viewportHeight - boxHeight - 20;
-      }
-      
-      setHoverPosition({ x, y });
+      setHoverPosition({ x: event.clientX, y: event.clientY });
     }, 100);
   };
+  
+  const handleSubscriptionClick = (subscription: Subscription, event: MouseEvent): void => {
+    // Clear any hover timeout
+    if (hoverTimeoutRef.current !== null) {
+      window.clearTimeout(hoverTimeoutRef.current);
+      setHoveredSubscription(null);
+    }
+    
+    // Toggle selection
+    const isDeselecting = subscription === selectedSubscription;
+    setSelectedSubscription(isDeselecting ? null : subscription);
+    
+    if (isDeselecting) {
+      return; // If deselecting, no need to update position
+    }
+    
+    // Get viewport dimensions
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+    const isMobile = viewportWidth < 640; // sm breakpoint in Tailwind
+    
+    // Calculate position - centered on mobile
+    const x = isMobile 
+      ? viewportWidth / 2  // Center on screen for mobile
+      : event.clientX;     // Use click position for desktop
+      
+    // Position above the clicked element by default
+    let y = event.clientY;
+    
+    setHoverPosition({ x, y });
+    
+    // Add event listener for click outside
+    setTimeout(() => {
+      document.addEventListener('click', handleClickOutside);
+    }, 0);
+  };
+  
+  // Function to handle clicks outside the subscription detail
+  const handleClickOutside = useCallback((event: MouseEvent) => {
+    // Check if the click is outside both subscription icons and detail
+    const target = event.target as HTMLElement;
+    const isSubscriptionIcon = target.closest('[data-subscription-icon]');
+    const isSubscriptionDetail = target.closest('[data-subscription-detail]');
+    
+    if (!isSubscriptionIcon && !isSubscriptionDetail) {
+      setSelectedSubscription(null);
+      document.removeEventListener('click', handleClickOutside);
+    }
+  }, []);
+  
+  // Make sure to clean up event listener when component unmounts
+  useEffect(() => {
+    return () => {
+      document.removeEventListener('click', handleClickOutside);
+    };
+  }, [handleClickOutside]);
 
   const handleSubscriptionLeave = (): void => {
+    // Don't clear hover if an item is selected
+    if (selectedSubscription) return;
+    
     if (hoverTimeoutRef.current !== null) {
       window.clearTimeout(hoverTimeoutRef.current);
     }
@@ -472,6 +516,8 @@ const SubscriptionCalendar: React.FC = () => {
             isDarkMode={isDarkMode}
             userLocale={userLocale}
             calculateTotalSpent={calculateTotalSpent}
+            positionType="click"
+            onClose={() => setSelectedSubscription(null)}
           />
         )}
 
@@ -482,6 +528,7 @@ const SubscriptionCalendar: React.FC = () => {
             isDarkMode={isDarkMode}
             userLocale={userLocale}
             calculateTotalSpent={calculateTotalSpent}
+            positionType="hover"
           />
         )}
 
@@ -638,17 +685,13 @@ const SubscriptionCalendar: React.FC = () => {
                     {daySubscriptions.map((subscription) => (
                       <div
                         key={subscription.id}
+                        data-subscription-icon="true"
                         onMouseEnter={(e: React.MouseEvent) =>
                           handleSubscriptionHover(subscription, e)
                         }
                         onMouseLeave={handleSubscriptionLeave}
                         onClick={(e: React.MouseEvent) => {
-                          setSelectedSubscription(
-                            subscription === selectedSubscription
-                              ? null
-                              : subscription
-                          );
-                          setHoverPosition({ x: e.clientX, y: e.clientY });
+                          handleSubscriptionClick(subscription, e);
                         }}
                         className="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold cursor-pointer hover:scale-110 transition-transform"
                         style={{ backgroundColor: subscription.color }}
