@@ -8,43 +8,70 @@ A visual calendar application that helps you track and manage your recurring sub
 - Integration with Google Sheets to store your subscription data
 - Dark/light mode toggle
 - Detailed view of each subscription
-- Localization support
+- Localization support (minimal)
 - Monthly spending summary
 
 ## Getting Started
 
 ### Prerequisites
 
-- Node.js (v14.x or later)
-- npm or yarn
+- [bun](https://bun.sh/) - Install on Windows (run PowerShell in terminal or in VS Code):
 
-### Installation
+```bash
+irm bun.sh/install.ps1 | iex
+```
+
+### Development
 
 1. Clone the repository
+
 ```bash
 git clone https://github.com/yourusername/subscription-calendar.git
 cd subscription-calendar
 ```
 
 2. Install dependencies
+
 ```bash
-npm install
-# or
-yarn install
+# Install dependencies
+bun install
 ```
 
 3. Run the development server
+
 ```bash
-npm run dev
-# or
-yarn dev
+# Start development server
+bun run dev
 ```
 
 4. Open [http://localhost:3000](http://localhost:3000) in your browser to see the application
 
 ## Google Sheets Integration
 
-To use your own subscription data:
+You can connect to Google Sheets in two ways:
+
+### 1. Environment Variables (Recommended for Production)
+
+Set up environment variables for secure, server-side configuration:
+
+1. Copy `.env.example` to `.env.local`:
+
+```bash
+cp .env.example .env.local
+```
+
+2. Fill in your values in `.env.local`:
+
+```bash
+SHEETS_SPREADSHEET_ID=your_spreadsheet_id_here
+SHEETS_API_KEY=your_api_key_here
+```
+
+Environment variables will be used by default when present. Users can still override these in the settings UI if needed, or revert back to using the environment values.
+
+### 2. User Interface Configuration
+
+To configure directly through the UI:
 
 1. Create a Google Sheet with the following columns:
    - name: The subscription name (e.g., Netflix)
@@ -56,7 +83,16 @@ To use your own subscription data:
    - logo: A letter or short text to represent the logo
    - startDate: When you first subscribed (YYYY-MM-DD format)
 
-2. Follow the setup instructions in the application to connect to your Google Sheet
+2. Share your Google Sheet to "anyone with the link"
+
+3. Enable the Google Sheets API:
+   - Go to the [Google Developers Console](https://console.developers.google.com/)
+   - Create a new project or select an existing one
+   - Enable the Google Sheets API
+   - Create an API key
+   - Copy your API key and spreadsheet ID (the long string in your spreadsheet URL)
+
+4. Enter these credentials in the application's setup page
 
 ## Technologies Used
 

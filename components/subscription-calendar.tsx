@@ -7,7 +7,8 @@ import {
   isConnected as checkConnection,
   isDemoMode,
 } from "./settings-service";
-import { fetchSubscriptions, mockSubscriptions, Subscription } from "./google-sheets-service";
+import { fetchSubscriptions, Subscription } from "./google-sheets-service";
+import { mockSubscriptions } from "../data/mock-subscriptions";
 import { 
   parseDate, 
   monthsBetweenDates, 
@@ -42,9 +43,18 @@ const SubscriptionCalendar: React.FC = () => {
   const hoverTimeoutRef = useRef<number | null>(null);
   const [currentSpreadsheetId, setCurrentSpreadsheetId] = useState<string | undefined>(undefined);
   const [currentApiKey, setCurrentApiKey] = useState<string | undefined>(undefined);
+  const [useEnvSpreadsheetId, setUseEnvSpreadsheetId] = useState<boolean>(false);
+  const [useEnvApiKey, setUseEnvApiKey] = useState<boolean>(false);
+  const [hasEnvSpreadsheetId, setHasEnvSpreadsheetId] = useState<boolean>(false);
+  const [hasEnvApiKey, setHasEnvApiKey] = useState<boolean>(false);
 
   // Function to fetch data from Google Sheets
-  const fetchFromGoogleSheets = useCallback(async (spreadsheetId: string, apiKey: string): Promise<void> => {
+  const fetchFromGoogleSheets = useCallback(async (
+    spreadsheetId: string, 
+    apiKey: string, 
+    useEnvSheet: boolean = false, 
+    useEnvKey: boolean = false
+  ): Promise<void> => {
     try {
       setLoading(true);
       setError(null);
@@ -62,25 +72,42 @@ const SubscriptionCalendar: React.FC = () => {
         return;
       }
 
-      // Real implementation: fetch data from Google Sheets
-      if (!spreadsheetId || !apiKey) {
-        // If no spreadsheetId or apiKey, use mock data
-        setSubscriptions(mockSubscriptions);
-        setIsConnected(false);
-        setLoading(false);
-        return;
-      }
-
+      // Verify connection through server API first
       try {
+        const response = await fetch('/api/sheets-connect', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            spreadsheetId,
+            apiKey,
+            useEnvSpreadsheetId: useEnvSheet,
+            useEnvApiKey: useEnvKey
+          }),
+        });
+        
+        const result = await response.json();
+        
+        if (!result.success) {
+          throw new Error(result.message || 'Failed to connect to Google Sheets');
+        }
+
         // Call the Google Sheets API service
-        const data = await fetchSubscriptions(spreadsheetId, apiKey);
+        const data = await fetchSubscriptions(
+          useEnvSheet ? result.spreadsheetId || '' : spreadsheetId,
+          useEnvKey ? 'ENV_KEY_USED' : apiKey,
+          useEnvSheet,
+          useEnvKey
+        );
+        
         setSubscriptions(data);
         setIsConnected(true);
         setError(null);
       } catch (err) {
         console.error("Error fetching data:", err);
         setError(
-          "Failed to fetch subscription data. Please check your API key and spreadsheet ID."
+          "Failed to fetch subscription data. Please check your connection settings."
         );
         setSubscriptions(mockSubscriptions); // Fallback to mock data on error
         setIsConnected(false);
@@ -97,52 +124,98 @@ const SubscriptionCalendar: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    // Load settings from local storage
-    const settings = loadSettings();
-    setUserLocale(settings.locale);
-    setIsDarkMode(settings.isDarkMode);
-    setInDemoMode(settings.demoMode || false);
-    setCurrentSpreadsheetId(settings.spreadsheetId);
-    setCurrentApiKey(settings.apiKey);
+    const initializeApp = async () => {
+      try {
+        // Load settings from local storage
+        const settings = await loadSettings();
+        setUserLocale(settings.locale);
+        setIsDarkMode(settings.isDarkMode);
+        setInDemoMode(settings.demoMode || false);
+        setCurrentSpreadsheetId(settings.spreadsheetId);
+        setCurrentApiKey(settings.apiKey);
+        setUseEnvSpreadsheetId(settings.useEnvSpreadsheetId || false);
+        setUseEnvApiKey(settings.useEnvApiKey || false);
+        setHasEnvSpreadsheetId(settings.hasEnvSpreadsheetId || false);
+        setHasEnvApiKey(settings.hasEnvApiKey || false);
 
-    if (typeof window !== 'undefined') {
-      // Check for demo mode in URL
-      const urlParams = new URLSearchParams(window.location.search);
-      const demoParam = urlParams.get("demo");
+        if (typeof window !== 'undefined') {
+          // Check for demo mode in URL
+          const urlParams = new URLSearchParams(window.location.search);
+          const demoParam = urlParams.get("demo");
 
-      if (demoParam === "true") {
-        // Force demo mode if specified in URL
-        setInDemoMode(true);
-        fetchFromGoogleSheets("", ""); // Empty parameters will trigger mock data
-        return;
+          if (demoParam === "true") {
+            // Force demo mode if specified in URL
+            setInDemoMode(true);
+            fetchFromGoogleSheets("", ""); // Empty parameters will trigger mock data
+            return;
+          }
+        }
+
+        // Check if we have connection details either through env vars or user settings
+        const connected = await checkConnection();
+        setIsConnected(connected);
+
+        // We can have a connection in 3 ways:
+        // 1. Using env variables for both spreadsheetId and apiKey
+        const usingEnvVars = settings.useEnvSpreadsheetId && settings.useEnvApiKey &&
+                           settings.hasEnvSpreadsheetId && settings.hasEnvApiKey;
+        
+        // 2. Using user-provided settings for both
+        const usingUserSettings = settings.spreadsheetId && settings.apiKey;
+        
+        // 3. A mix of env vars and user settings
+        const usingMixedSettings = 
+          (settings.useEnvSpreadsheetId && settings.hasEnvSpreadsheetId && settings.apiKey) ||
+          (settings.useEnvApiKey && settings.hasEnvApiKey && settings.spreadsheetId);
+
+        if (connected && (usingEnvVars || usingUserSettings || usingMixedSettings)) {
+          fetchFromGoogleSheets(
+            settings.spreadsheetId || '',
+            settings.apiKey || '',
+            settings.useEnvSpreadsheetId,
+            settings.useEnvApiKey
+          );
+        } else {
+          // Use mock data if no connection
+          setSubscriptions(mockSubscriptions);
+          setLoading(false);
+        }
+      } catch (error) {
+        console.error("Error initializing app:", error);
+        setError("Failed to initialize application settings");
+        setSubscriptions(mockSubscriptions);
+        setLoading(false);
       }
-    }
+    };
 
-    // Check if we have connection details
-    const connected = checkConnection();
-    setIsConnected(connected);
-
-    if (connected && settings.spreadsheetId && settings.apiKey) {
-      fetchFromGoogleSheets(settings.spreadsheetId, settings.apiKey);
-    } else {
-      // Use mock data if no connection
-      setSubscriptions(mockSubscriptions);
-      setLoading(false);
-    }
+    initializeApp();
   }, [fetchFromGoogleSheets]);
 
-  const handleSaveSettings = (spreadsheetId: string, apiKey: string, locale: string): void => {
+  const handleSaveSettings = (
+    spreadsheetId: string, 
+    apiKey: string, 
+    locale: string,
+    useEnvSpreadsheetId: boolean = false,
+    useEnvApiKey: boolean = false
+  ): void => {
     // Save settings to local storage
     saveSettingsToStorage({
       spreadsheetId,
       apiKey,
       locale,
+      useEnvSpreadsheetId,
+      useEnvApiKey,
       demoMode: false, // Turn off demo mode when saving real settings
     });
 
     setUserLocale(locale);
+    setUseEnvSpreadsheetId(useEnvSpreadsheetId);
+    setUseEnvApiKey(useEnvApiKey);
+    setCurrentSpreadsheetId(spreadsheetId);
+    setCurrentApiKey(apiKey);
     setInDemoMode(false);
-    fetchFromGoogleSheets(spreadsheetId, apiKey);
+    
+    fetchFromGoogleSheets(spreadsheetId, apiKey, useEnvSpreadsheetId, useEnvApiKey);
     setSetupVisible(false);
   };
 
@@ -152,7 +225,7 @@ const SubscriptionCalendar: React.FC = () => {
     saveSettingsToStorage({ isDarkMode: newMode });
   };
 
-  const toggleDemoMode = (): void => {
+  const toggleDemoMode = async (): Promise<void> => {
     const newDemoMode = !inDemoMode;
     setInDemoMode(newDemoMode);
     saveSettingsToStorage({ demoMode: newDemoMode });
@@ -161,9 +234,19 @@ const SubscriptionCalendar: React.FC = () => {
       fetchFromGoogleSheets("", ""); // Empty parameters will trigger mock data
     } else {
       // Try to load real data if we have credentials
-      const settings = loadSettings();
-      if (settings.spreadsheetId && settings.apiKey) {
-        fetchFromGoogleSheets(settings.spreadsheetId, settings.apiKey);
+      const settings = await loadSettings();
+      if (
+        (settings.useEnvSpreadsheetId && settings.hasEnvSpreadsheetId) ||
+        (settings.useEnvApiKey && settings.hasEnvApiKey) ||
+        settings.spreadsheetId ||
+        settings.apiKey
+      ) {
+        fetchFromGoogleSheets(
+          settings.spreadsheetId || '',
+          settings.apiKey || '',
+          settings.useEnvSpreadsheetId,
+          settings.useEnvApiKey
+        );
       }
     }
   };
@@ -390,6 +473,10 @@ const SubscriptionCalendar: React.FC = () => {
             userLocale={userLocale}
             spreadsheetId={currentSpreadsheetId}
             apiKey={currentApiKey}
+            hasEnvSpreadsheetId={hasEnvSpreadsheetId}
+            hasEnvApiKey={hasEnvApiKey}
+            useEnvSpreadsheetId={useEnvSpreadsheetId}
+            useEnvApiKey={useEnvApiKey}
             onSaveSettings={handleSaveSettings}
             onCancel={() => setSetupVisible(false)}
           />
