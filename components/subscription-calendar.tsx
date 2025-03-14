@@ -16,6 +16,8 @@ import {
   reorderWeekdaysForLocale, 
   adjustDayOfWeek
 } from "./date-utils";
+import MonthlySummaryTable from "./monthly-summary-table";
+import SubscriptionTrends from "./subscription-trends";
 
 interface CalendarDayObject {
   day: number;
@@ -47,6 +49,7 @@ const SubscriptionCalendar: React.FC = () => {
   const [useEnvApiKey, setUseEnvApiKey] = useState<boolean>(false);
   const [hasEnvSpreadsheetId, setHasEnvSpreadsheetId] = useState<boolean>(false);
   const [hasEnvApiKey, setHasEnvApiKey] = useState<boolean>(false);
+  const [lastFetchTime, setLastFetchTime] = useState<Date | undefined>(undefined);
 
   // Function to fetch data from Google Sheets
   const fetchFromGoogleSheets = useCallback(async (
@@ -69,6 +72,7 @@ const SubscriptionCalendar: React.FC = () => {
         setSubscriptions(mockSubscriptions);
         setIsConnected(false); // We're not actually connected in demo mode
         setLoading(false);
+        setLastFetchTime(new Date()); // Set last fetch time
         return;
       }
 
@@ -104,6 +108,7 @@ const SubscriptionCalendar: React.FC = () => {
         setSubscriptions(data);
         setIsConnected(true);
         setError(null);
+        setLastFetchTime(new Date()); // Set last fetch time
       } catch (err) {
         console.error("Error fetching data:", err);
         setError(
@@ -717,6 +722,26 @@ const SubscriptionCalendar: React.FC = () => {
               );
             })}
           </div>
+          
+          {/* Monthly Summary Table */}
+          <MonthlySummaryTable 
+            subscriptions={subscriptions}
+            month={currentDate.getMonth()}
+            year={currentDate.getFullYear()}
+            userLocale={userLocale}
+            isDarkMode={isDarkMode}
+            onSubscriptionClick={handleSubscriptionClick}
+          />
+          
+          {/* Subscription Trends */}
+          <SubscriptionTrends
+            subscriptions={subscriptions}
+            userLocale={userLocale}
+            isDarkMode={isDarkMode}
+            lastFetchTime={lastFetchTime}
+            currentMonth={currentDate.getMonth()}
+            currentYear={currentDate.getFullYear()}
+          />
         </div>
       </div>
     </div>
