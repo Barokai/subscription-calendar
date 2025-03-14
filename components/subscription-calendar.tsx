@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useCallback, useRef, MouseEvent } from "react";
 import SetupInstructions from "./setup-instructions";
 import SubscriptionDetail from "./subscription-detail";
 import {
@@ -7,25 +7,35 @@ import {
   isConnected as checkConnection,
   isDemoMode,
 } from "./settings-service";
-import { fetchSubscriptions, mockSubscriptions } from "./google-sheets-service";
+import { fetchSubscriptions, mockSubscriptions, Subscription } from "./google-sheets-service";
 
-const SubscriptionCalendar = () => {
-  const [currentDate, setCurrentDate] = useState(new Date());
-  const [subscriptions, setSubscriptions] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [setupVisible, setSetupVisible] = useState(false);
-  const [isDarkMode, setIsDarkMode] = useState(true);
-  const [userLocale, setUserLocale] = useState("en-US");
-  const [isConnected, setIsConnected] = useState(false);
-  const [hoverPosition, setHoverPosition] = useState({ x: 0, y: 0 });
-  const [hoveredSubscription, setHoveredSubscription] = useState(null);
-  const [selectedSubscription, setSelectedSubscription] = useState(null);
-  const [inDemoMode, setInDemoMode] = useState(false);
-  const hoverTimeoutRef = useRef(null);
+interface CalendarDayObject {
+  day: number;
+  month: number;
+  year: number;
+  isPrevMonth?: boolean;
+  isCurrentMonth?: boolean;
+  isNextMonth?: boolean;
+  isToday?: boolean;
+}
+
+const SubscriptionCalendar: React.FC = () => {
+  const [currentDate, setCurrentDate] = useState<Date>(new Date());
+  const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+  const [setupVisible, setSetupVisible] = useState<boolean>(false);
+  const [isDarkMode, setIsDarkMode] = useState<boolean>(true);
+  const [userLocale, setUserLocale] = useState<string>("en-US");
+  const [isConnected, setIsConnected] = useState<boolean>(false);
+  const [hoverPosition, setHoverPosition] = useState<{ x: number, y: number }>({ x: 0, y: 0 });
+  const [hoveredSubscription, setHoveredSubscription] = useState<Subscription | null>(null);
+  const [selectedSubscription, setSelectedSubscription] = useState<Subscription | null>(null);
+  const [inDemoMode, setInDemoMode] = useState<boolean>(false);
+  const hoverTimeoutRef = useRef<number | null>(null);
 
   // Function to fetch data from Google Sheets
-  const fetchFromGoogleSheets = useCallback(async (spreadsheetId, apiKey) => {
+  const fetchFromGoogleSheets = useCallback(async (spreadsheetId: string, apiKey: string): Promise<void> => {
     try {
       setLoading(true);
       setError(null);
@@ -84,15 +94,17 @@ const SubscriptionCalendar = () => {
     setIsDarkMode(settings.isDarkMode);
     setInDemoMode(settings.demoMode || false);
 
-    // Check for demo mode in URL
-    const urlParams = new URLSearchParams(window.location.search);
-    const demoParam = urlParams.get("demo");
+    if (typeof window !== 'undefined') {
+      // Check for demo mode in URL
+      const urlParams = new URLSearchParams(window.location.search);
+      const demoParam = urlParams.get("demo");
 
-    if (demoParam === "true") {
-      // Force demo mode if specified in URL
-      setInDemoMode(true);
-      fetchFromGoogleSheets("", ""); // Empty parameters will trigger mock data
-      return;
+      if (demoParam === "true") {
+        // Force demo mode if specified in URL
+        setInDemoMode(true);
+        fetchFromGoogleSheets("", ""); // Empty parameters will trigger mock data
+        return;
+      }
     }
 
     // Check if we have connection details
@@ -108,7 +120,7 @@ const SubscriptionCalendar = () => {
     }
   }, [fetchFromGoogleSheets]);
 
-  const handleSaveSettings = (spreadsheetId, apiKey, locale) => {
+  const handleSaveSettings = (spreadsheetId: string, apiKey: string, locale: string): void => {
     // Save settings to local storage
     saveSettingsToStorage({
       spreadsheetId,
@@ -123,13 +135,13 @@ const SubscriptionCalendar = () => {
     setSetupVisible(false);
   };
 
-  const toggleDarkMode = () => {
+  const toggleDarkMode = (): void => {
     const newMode = !isDarkMode;
     setIsDarkMode(newMode);
     saveSettingsToStorage({ isDarkMode: newMode });
   };
 
-  const toggleDemoMode = () => {
+  const toggleDemoMode = (): void => {
     const newDemoMode = !inDemoMode;
     setInDemoMode(newDemoMode);
     saveSettingsToStorage({ demoMode: newDemoMode });
@@ -146,38 +158,42 @@ const SubscriptionCalendar = () => {
   };
 
   // Calendar helper functions
-  const getDaysInMonth = (year, month) => {
+  const getDaysInMonth = (year: number, month: number): number => {
     return new Date(year, month + 1, 0).getDate();
   };
 
-  const getMonthName = (month) => {
+  const getMonthName = (month: number): string => {
     return new Date(currentDate.getFullYear(), month).toLocaleString(
       userLocale,
       { month: "long" }
     );
   };
 
-  const navigateMonth = (direction) => {
+  const navigateMonth = (direction: number): void => {
     const newDate = new Date(currentDate);
     newDate.setMonth(newDate.getMonth() + direction);
     setCurrentDate(newDate);
   };
 
-  const getSubscriptionsForDay = (day) => {
+  const getSubscriptionsForDay = (day: number): Subscription[] => {
     return subscriptions.filter((sub) => sub.dayOfMonth === day);
   };
 
   // Calculate total monthly spend
-  const calculateMonthlyTotal = () => {
+  const calculateMonthlyTotal = (): string => {
+    if (subscriptions.length === 0) return "0";
+    
     let total = subscriptions.reduce((sum, sub) => sum + sub.amount, 0);
+    const currency = subscriptions[0]?.currency.replace("€", "EUR") || "EUR";
+    
     return total.toLocaleString(userLocale, {
       style: "currency",
-      currency: subscriptions[0]?.currency.replace("€", "EUR") || "EUR",
+      currency
     });
   };
 
   // Calculate total spent since start date
-  const calculateTotalSpent = (subscription) => {
+  const calculateTotalSpent = (subscription: Subscription): string => {
     const startDate = new Date(subscription.startDate);
     const currentDate = new Date();
 
@@ -195,7 +211,7 @@ const SubscriptionCalendar = () => {
     });
   };
 
-  const renderCalendar = () => {
+  const renderCalendar = (): CalendarDayObject[] => {
     const year = currentDate.getFullYear();
     const month = currentDate.getMonth();
     const today = new Date();
@@ -208,7 +224,7 @@ const SubscriptionCalendar = () => {
     const firstDayOfMonth = new Date(year, month, 1).getDay();
 
     // Calculate days from previous month to display
-    const prevMonthDays = [];
+    const prevMonthDays: CalendarDayObject[] = [];
     for (let i = firstDayOfMonth - 1; i >= 0; i--) {
       prevMonthDays.push({
         day: daysInPrevMonth - i,
@@ -219,7 +235,7 @@ const SubscriptionCalendar = () => {
     }
 
     // Calculate days in current month
-    const currentMonthDays = [];
+    const currentMonthDays: CalendarDayObject[] = [];
     for (let day = 1; day <= daysInMonth; day++) {
       currentMonthDays.push({
         day,
@@ -234,7 +250,7 @@ const SubscriptionCalendar = () => {
     }
 
     // Calculate days from next month to display (to fill a 6-row calendar)
-    const nextMonthDays = [];
+    const nextMonthDays: CalendarDayObject[] = [];
     const totalDaysDisplayed = prevMonthDays.length + currentMonthDays.length;
     const daysToAdd = 42 - totalDaysDisplayed; // 6 rows x 7 days = 42
 
@@ -250,8 +266,8 @@ const SubscriptionCalendar = () => {
     return [...prevMonthDays, ...currentMonthDays, ...nextMonthDays];
   };
 
-  const getWeekdayNames = () => {
-    const weekdays = [];
+  const getWeekdayNames = (): string[] => {
+    const weekdays: string[] = [];
     for (let i = 0; i < 7; i++) {
       const date = new Date(2023, 0, i + 1); // January 1, 2023 was a Sunday
       weekdays.push(
@@ -261,24 +277,24 @@ const SubscriptionCalendar = () => {
     return weekdays;
   };
 
-  const handleSubscriptionHover = (subscription, event) => {
+  const handleSubscriptionHover = (subscription: Subscription, event: MouseEvent): void => {
     // Clear any existing timeout
-    if (hoverTimeoutRef.current) {
-      clearTimeout(hoverTimeoutRef.current);
+    if (hoverTimeoutRef.current !== null) {
+      window.clearTimeout(hoverTimeoutRef.current);
     }
 
     // Set a small timeout to prevent flickering on quick mouse movements
-    hoverTimeoutRef.current = setTimeout(() => {
+    hoverTimeoutRef.current = window.setTimeout(() => {
       setHoveredSubscription(subscription);
       setHoverPosition({ x: event.clientX, y: event.clientY });
     }, 100);
   };
 
-  const handleSubscriptionLeave = () => {
-    if (hoverTimeoutRef.current) {
-      clearTimeout(hoverTimeoutRef.current);
+  const handleSubscriptionLeave = (): void => {
+    if (hoverTimeoutRef.current !== null) {
+      window.clearTimeout(hoverTimeoutRef.current);
     }
-    hoverTimeoutRef.current = setTimeout(() => {
+    hoverTimeoutRef.current = window.setTimeout(() => {
       setHoveredSubscription(null);
     }, 300);
   };
@@ -489,11 +505,11 @@ const SubscriptionCalendar = () => {
                     {daySubscriptions.map((subscription) => (
                       <div
                         key={subscription.id}
-                        onMouseEnter={(e) =>
+                        onMouseEnter={(e: React.MouseEvent) =>
                           handleSubscriptionHover(subscription, e)
                         }
                         onMouseLeave={handleSubscriptionLeave}
-                        onClick={(e) => {
+                        onClick={(e: React.MouseEvent) => {
                           setSelectedSubscription(
                             subscription === selectedSubscription
                               ? null

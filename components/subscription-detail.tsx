@@ -1,11 +1,12 @@
 import React from 'react';
+import { Subscription } from './google-sheets-service';
 
 interface SubscriptionDetailProps {
-  subscription: any;
+  subscription: Subscription;
   position: { x: number, y: number };
   isDarkMode: boolean;
   userLocale: string;
-  calculateTotalSpent: (subscription: any) => string;
+  calculateTotalSpent: (subscription: Subscription) => string;
 }
 
 const SubscriptionDetail: React.FC<SubscriptionDetailProps> = ({

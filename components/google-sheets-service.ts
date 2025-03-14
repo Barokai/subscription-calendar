@@ -1,6 +1,6 @@
 // Service to handle Google Sheets API interactions
 
-interface Subscription {
+export interface Subscription {
   id: number;
   name: string;
   amount: number;
@@ -71,6 +71,11 @@ export const mockSubscriptions: Subscription[] = [
   }
 ];
 
+interface SheetResponse {
+  values: string[][];
+  [key: string]: unknown;
+}
+
 /**
  * Fetch subscription data from Google Sheets
  * @param spreadsheetId - The ID of the Google Spreadsheet
@@ -83,7 +88,7 @@ export const fetchSubscriptions = async (
 ): Promise<Subscription[]> => {
   const range = 'A:H'; // Assume data is in columns A-H
   const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${range}?key=${apiKey}`;
-  console.log(url);
+  
   try {
     const response = await fetch(url);
     
@@ -92,7 +97,7 @@ export const fetchSubscriptions = async (
       throw new Error(`API request failed with status ${response.status}, error.code ${json.error.code}, error.message: ${json.error.message}`);
     }
     
-    const data = await response.json();
+    const data = await response.json() as SheetResponse;
     
     // Check if we have values
     if (!data.values || data.values.length <= 1) {
@@ -127,54 +132,56 @@ export const fetchSubscriptions = async (
     }
     
     // Parse the data rows
-    const subscriptions: Subscription[] = data.values.slice(1).map((row: any[], index: number) => {
-      // Validate the row has enough columns
-      if (row.length <= Math.max(
-        nameIndex, amountIndex, currencyIndex, frequencyIndex, 
-        dayOfMonthIndex, colorIndex, logoIndex, startDateIndex
-      )) {
-        console.warn(`Row ${index + 1} has missing data, skipping`);
-        return null;
-      }
-      
-      // Get values from the row
-      const name = row[nameIndex];
-      const amount = parseFloat(row[amountIndex]);
-      const currency = row[currencyIndex];
-      const frequency = row[frequencyIndex];
-      const dayOfMonth = parseInt(row[dayOfMonthIndex], 10);
-      const color = row[colorIndex];
-      const logo = row[logoIndex];
-      const startDate = row[startDateIndex];
-      
-      // Validate all required fields exist and are valid
-      if (
-        !name ||
-        isNaN(amount) ||
-        !currency ||
-        !frequency ||
-        isNaN(dayOfMonth) ||
-        !color ||
-        !logo ||
-        !startDate
-      ) {
-        console.warn(`Row ${index + 1} has invalid data, skipping`);
-        return null;
-      }
-      
-      // Create a subscription object
-      return {
-        id: index,
-        name,
-        amount,
-        currency,
-        frequency,
-        dayOfMonth,
-        color,
-        logo,
-        startDate
-      };
-    }).filter((sub: Subscription | null) => sub !== null);
+    const subscriptions: Subscription[] = data.values.slice(1)
+      .map((row: string[], index: number): Subscription | null => {
+        // Validate the row has enough columns
+        if (row.length <= Math.max(
+          nameIndex, amountIndex, currencyIndex, frequencyIndex, 
+          dayOfMonthIndex, colorIndex, logoIndex, startDateIndex
+        )) {
+          console.warn(`Row ${index + 1} has missing data, skipping`);
+          return null;
+        }
+        
+        // Get values from the row
+        const name = row[nameIndex];
+        const amount = parseFloat(row[amountIndex]);
+        const currency = row[currencyIndex];
+        const frequency = row[frequencyIndex];
+        const dayOfMonth = parseInt(row[dayOfMonthIndex], 10);
+        const color = row[colorIndex];
+        const logo = row[logoIndex];
+        const startDate = row[startDateIndex];
+        
+        // Validate all required fields exist and are valid
+        if (
+          !name ||
+          isNaN(amount) ||
+          !currency ||
+          !frequency ||
+          isNaN(dayOfMonth) ||
+          !color ||
+          !logo ||
+          !startDate
+        ) {
+          console.warn(`Row ${index + 1} has invalid data, skipping`);
+          return null;
+        }
+        
+        // Create a subscription object
+        return {
+          id: index,
+          name,
+          amount,
+          currency,
+          frequency,
+          dayOfMonth,
+          color,
+          logo,
+          startDate
+        };
+      })
+      .filter((sub): sub is Subscription => sub !== null);
     
     if (subscriptions.length === 0) {
       throw new Error('No valid subscription data found in the spreadsheet');
