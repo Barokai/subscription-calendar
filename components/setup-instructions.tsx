@@ -3,6 +3,8 @@ import React from 'react';
 interface SetupInstructionsProps {
   isDarkMode: boolean;
   userLocale: string;
+  spreadsheetId?: string;
+  apiKey?: string;
   onSaveSettings: (spreadsheetId: string, apiKey: string, locale: string) => void;
   onCancel: () => void;
 }
@@ -10,6 +12,8 @@ interface SetupInstructionsProps {
 const SetupInstructions: React.FC<SetupInstructionsProps> = ({
   isDarkMode,
   userLocale,
+  spreadsheetId = '',
+  apiKey = '',
   onSaveSettings,
   onCancel
 }) => {
@@ -19,16 +23,17 @@ const SetupInstructions: React.FC<SetupInstructionsProps> = ({
       
       <div className="mb-6">
         <h3 className="text-xl font-semibold mb-2">Step 1: Create a Google Sheet</h3>
+        <p className="">Share the sheet to "anyone with the link"</p>
         <p className="mb-3">Create a Google Sheet with the following columns:</p>
         <ul className="list-disc ml-6 mb-4">
           <li>name - The subscription name (e.g., Netflix)</li>
           <li>amount - The cost of the subscription</li>
           <li>currency - The currency symbol (e.g., €)</li>
           <li>frequency - How often the subscription renews (e.g., monthly)</li>
-          <li>dayOfMonth - The day of the month when payment is due</li>
+          <li>day of month - The day of the month when payment is due</li>
           <li>color - The brand color in hex format (e.g., #E50914 for Netflix)</li>
           <li>logo - A letter or short text to represent the logo</li>
-          <li>startDate - When you first subscribed (YYYY-MM-DD format)</li>
+          <li>start date - When you first subscribed (YYYY-MM-DD format)</li>
         </ul>
       </div>
       
@@ -58,8 +63,14 @@ const SetupInstructions: React.FC<SetupInstructionsProps> = ({
             name="spreadsheetId" 
             className={`w-full p-2 border-2 rounded-md ${isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-800'}`}
             placeholder="e.g., 1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms"
+            defaultValue={spreadsheetId}
             required
           />
+          {spreadsheetId && (
+            <div className="text-xs text-green-500 mt-1">
+              ✓ Current spreadsheet ID is set
+            </div>
+          )}
         </div>
         
         <div>
@@ -69,8 +80,14 @@ const SetupInstructions: React.FC<SetupInstructionsProps> = ({
             name="apiKey" 
             className={`w-full p-2 border-2 rounded-md ${isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-800'}`}
             placeholder="e.g., AIzaSyBJH3s..."
+            defaultValue={apiKey}
             required
           />
+          {apiKey && (
+            <div className="text-xs text-green-500 mt-1">
+              ✓ Current API key is set
+            </div>
+          )}
         </div>
         
         <div>
@@ -84,11 +101,8 @@ const SetupInstructions: React.FC<SetupInstructionsProps> = ({
             <option value="en-US">English (US)</option>
             <option value="en-GB">English (UK)</option>
             <option value="de-DE">German</option>
-            <option value="fr-FR">French</option>
             <option value="es-ES">Spanish</option>
             <option value="it-IT">Italian</option>
-            <option value="ja-JP">Japanese</option>
-            <option value="zh-CN">Chinese</option>
           </select>
         </div>
         
@@ -97,7 +111,7 @@ const SetupInstructions: React.FC<SetupInstructionsProps> = ({
             type="submit"
             className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 flex-1 transition-colors"
           >
-            Connect
+            {spreadsheetId || apiKey ? 'Update Connection' : 'Connect'}
           </button>
           
           <button 

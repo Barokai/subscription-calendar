@@ -1,5 +1,7 @@
 // Service to handle Google Sheets API interactions
 
+import { formatISODate } from './date-utils';
+
 export interface Subscription {
   id: number;
   name: string;
@@ -112,10 +114,10 @@ export const fetchSubscriptions = async (
     const amountIndex = headers.indexOf('amount');
     const currencyIndex = headers.indexOf('currency');
     const frequencyIndex = headers.indexOf('frequency');
-    const dayOfMonthIndex = headers.indexOf('dayofmonth');
+    const dayOfMonthIndex = headers.indexOf('day of month');
     const colorIndex = headers.indexOf('color');
     const logoIndex = headers.indexOf('logo');
-    const startDateIndex = headers.indexOf('startdate');
+    const startDateIndex = headers.indexOf('start date');
     
     // Check if all required columns exist
     if (
@@ -168,7 +170,13 @@ export const fetchSubscriptions = async (
           return null;
         }
         
-        // Create a subscription object
+        // Create a subscription object - make sure startDate is normalized to ISO format
+        // This ensures consistent storage regardless of input format
+        const parsedStartDate = new Date(startDate);
+        const normalizedStartDate = !isNaN(parsedStartDate.getTime()) 
+          ? formatISODate(parsedStartDate) 
+          : startDate;
+        
         return {
           id: index,
           name,
@@ -178,7 +186,7 @@ export const fetchSubscriptions = async (
           dayOfMonth,
           color,
           logo,
-          startDate
+          startDate: normalizedStartDate
         };
       })
       .filter((sub): sub is Subscription => sub !== null);

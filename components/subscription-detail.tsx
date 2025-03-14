@@ -1,5 +1,6 @@
 import React from 'react';
 import { Subscription } from './google-sheets-service';
+import { parseDate } from './date-utils';
 
 interface SubscriptionDetailProps {
   subscription: Subscription;
@@ -36,11 +37,17 @@ const SubscriptionDetail: React.FC<SubscriptionDetailProps> = ({
   }
   nextPaymentDate.setDate(subscription.dayOfMonth);
   
+  // Parse the start date using our locale-aware function
+  const startDate = parseDate(subscription.startDate, userLocale);
+  
   const formattedNextPayment = nextPaymentDate.toLocaleDateString(userLocale, { 
     year: 'numeric', 
     month: '2-digit', 
     day: '2-digit' 
   });
+  
+  // Format the start date according to user locale
+  const formattedStartDate = startDate.toLocaleDateString(userLocale);
   
   return (
     <div 
@@ -72,7 +79,7 @@ const SubscriptionDetail: React.FC<SubscriptionDetailProps> = ({
           <span>Next: {formattedNextPayment}</span>
         </div>
         <div className="flex justify-between">
-          <span>Since {new Date(subscription.startDate).toLocaleDateString(userLocale)}</span>
+          <span>Since {formattedStartDate}</span>
           <span>{calculateTotalSpent(subscription)}</span>
         </div>
       </div>

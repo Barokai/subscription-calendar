@@ -8,6 +8,13 @@ import {
   isDemoMode,
 } from "./settings-service";
 import { fetchSubscriptions, mockSubscriptions, Subscription } from "./google-sheets-service";
+import { 
+  parseDate, 
+  monthsBetweenDates, 
+  getFirstDayOfWeek, 
+  reorderWeekdaysForLocale, 
+  adjustDayOfWeek
+} from "./date-utils";
 
 interface CalendarDayObject {
   day: number;
@@ -33,6 +40,8 @@ const SubscriptionCalendar: React.FC = () => {
   const [selectedSubscription, setSelectedSubscription] = useState<Subscription | null>(null);
   const [inDemoMode, setInDemoMode] = useState<boolean>(false);
   const hoverTimeoutRef = useRef<number | null>(null);
+  const [currentSpreadsheetId, setCurrentSpreadsheetId] = useState<string | undefined>(undefined);
+  const [currentApiKey, setCurrentApiKey] = useState<string | undefined>(undefined);
 
   // Function to fetch data from Google Sheets
   const fetchFromGoogleSheets = useCallback(async (spreadsheetId: string, apiKey: string): Promise<void> => {
@@ -93,6 +102,8 @@ const SubscriptionCalendar: React.FC = () => {
     setUserLocale(settings.locale);
     setIsDarkMode(settings.isDarkMode);
     setInDemoMode(settings.demoMode || false);
+    setCurrentSpreadsheetId(settings.spreadsheetId);
+    setCurrentApiKey(settings.apiKey);
 
     if (typeof window !== 'undefined') {
       // Check for demo mode in URL
@@ -194,19 +205,18 @@ const SubscriptionCalendar: React.FC = () => {
 
   // Calculate total spent since start date
   const calculateTotalSpent = (subscription: Subscription): string => {
-    const startDate = new Date(subscription.startDate);
+    // Use the parseDate function with the user's locale
+    const startDate = parseDate(subscription.startDate, userLocale);
     const currentDate = new Date();
-
-    // Calculate months between start date and current date
-    const months =
-      (currentDate.getFullYear() - startDate.getFullYear()) * 12 +
-      (currentDate.getMonth() - startDate.getMonth());
-
+    
+    // Calculate months between start date and current date using our utility function
+    const months = monthsBetweenDates(startDate, currentDate);
+    
     // Calculate total spent
     const totalSpent = months * subscription.amount;
-
+    
     return totalSpent.toLocaleString(userLocale, {
-      style: "currency",
+      style: 'currency',
       currency: subscription.currency.replace("€", "EUR") || "EUR",
     });
   };
@@ -215,17 +225,23 @@ const SubscriptionCalendar: React.FC = () => {
     const year = currentDate.getFullYear();
     const month = currentDate.getMonth();
     const today = new Date();
-
+    
+    // Get the first day of week based on locale
+    const firstDayOfWeek = getFirstDayOfWeek(userLocale);
+    
     // Get days in current month and previous month
     const daysInMonth = getDaysInMonth(year, month);
     const daysInPrevMonth = getDaysInMonth(year, month - 1);
-
+    
     // Get first day of month (0 = Sunday, 1 = Monday, etc.)
     const firstDayOfMonth = new Date(year, month, 1).getDay();
-
+    
+    // Adjust the first day of month based on the locale's first day of week
+    const adjustedFirstDayOfMonth = adjustDayOfWeek(firstDayOfMonth, firstDayOfWeek);
+    
     // Calculate days from previous month to display
     const prevMonthDays: CalendarDayObject[] = [];
-    for (let i = firstDayOfMonth - 1; i >= 0; i--) {
+    for (let i = adjustedFirstDayOfMonth - 1; i >= 0; i--) {
       prevMonthDays.push({
         day: daysInPrevMonth - i,
         month: month - 1,
@@ -267,14 +283,20 @@ const SubscriptionCalendar: React.FC = () => {
   };
 
   const getWeekdayNames = (): string[] => {
-    const weekdays: string[] = [];
+    // Get the first day of week based on locale
+    const firstDayOfWeek = getFirstDayOfWeek(userLocale);
+    
+    // Generate weekday names starting from Sunday
+    const sundayFirstWeekdays: string[] = [];
     for (let i = 0; i < 7; i++) {
       const date = new Date(2023, 0, i + 1); // January 1, 2023 was a Sunday
-      weekdays.push(
+      sundayFirstWeekdays.push(
         date.toLocaleString(userLocale, { weekday: "short" }).toUpperCase()
       );
     }
-    return weekdays;
+    
+    // Reorder weekdays based on locale's first day of week
+    return reorderWeekdaysForLocale(sundayFirstWeekdays, firstDayOfWeek);
   };
 
   const handleSubscriptionHover = (subscription: Subscription, event: MouseEvent): void => {
@@ -336,7 +358,7 @@ const SubscriptionCalendar: React.FC = () => {
   }
 
   return (
-    <div className="flex justify-center items-start min-h-screen py-8">
+    <div className="flex justify-center items-start min-h-screen py-2">
       <div
         className={`max-w-3xl w-full mx-auto ${
           isDarkMode ? "bg-gray-900 text-white" : "bg-white text-gray-800"
@@ -366,6 +388,8 @@ const SubscriptionCalendar: React.FC = () => {
           <SetupInstructions
             isDarkMode={isDarkMode}
             userLocale={userLocale}
+            spreadsheetId={currentSpreadsheetId}
+            apiKey={currentApiKey}
             onSaveSettings={handleSaveSettings}
             onCancel={() => setSetupVisible(false)}
           />

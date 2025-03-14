@@ -20,7 +20,7 @@ export const loadSettings = (): CalendarSettings => {
   // Make sure we're in a browser environment
   if (typeof window === 'undefined') {
     return {
-      locale: 'en-US',
+      locale: 'de-AT',
       isDarkMode: true
     };
   }
@@ -32,10 +32,10 @@ export const loadSettings = (): CalendarSettings => {
   const spreadsheetId = localStorage.getItem(STORAGE_KEYS.SPREADSHEET_ID) || undefined;
   const apiKey = localStorage.getItem(STORAGE_KEYS.API_KEY) || undefined;
   
-  // Get locale with fallback to browser default or en-US
+  // Get locale with fallback to browser default or de-AT
   const locale = localStorage.getItem(STORAGE_KEYS.LOCALE) || 
                 navigator.language || 
-                'en-US';
+                'de-AT';
   
   // Get dark mode preference with default true
   const darkModeValue = localStorage.getItem(STORAGE_KEYS.DARK_MODE);
