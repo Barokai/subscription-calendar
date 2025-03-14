@@ -391,7 +391,25 @@ const SubscriptionCalendar: React.FC = () => {
     // Set a small timeout to prevent flickering on quick mouse movements
     hoverTimeoutRef.current = window.setTimeout(() => {
       setHoveredSubscription(subscription);
-      setHoverPosition({ x: event.clientX, y: event.clientY });
+      // Calculate position to ensure detail box stays within viewport
+      const viewportWidth = window.innerWidth;
+      const viewportHeight = window.innerHeight;
+      const boxWidth = 320; // Estimate of detail box width
+      const boxHeight = 200; // Estimate of detail box height
+      
+      let x = event.clientX;
+      let y = event.clientY;
+      
+      // Adjust position if it would go off-screen
+      if (x + boxWidth > viewportWidth) {
+        x = viewportWidth - boxWidth - 20;
+      }
+      
+      if (y + boxHeight > viewportHeight) {
+        y = viewportHeight - boxHeight - 20;
+      }
+      
+      setHoverPosition({ x, y });
     }, 100);
   };
 
@@ -482,55 +500,57 @@ const SubscriptionCalendar: React.FC = () => {
           />
         )}
 
-        <div className="p-6">
-          <div className="flex justify-between items-center mb-6">
+        <div className="p-4 md:p-6">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
             <div className="flex items-center">
               <button
                 onClick={() => navigateMonth(-1)}
-                className="w-10 h-10 rounded-full flex items-center justify-center mr-2 bg-gray-800 text-white hover:bg-gray-700 transition-colors"
+                className="w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center mr-2 bg-gray-800 text-white hover:bg-gray-700 transition-colors"
               >
                 &lt;
               </button>
               <button
                 onClick={() => navigateMonth(1)}
-                className="w-10 h-10 rounded-full flex items-center justify-center mr-4 bg-gray-800 text-white hover:bg-gray-700 transition-colors"
+                className="w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center mr-4 bg-gray-800 text-white hover:bg-gray-700 transition-colors"
               >
                 &gt;
               </button>
-              <h1 className="text-2xl font-bold">
+              <h1 className="text-xl sm:text-2xl font-bold">
                 {getMonthName(currentDate.getMonth())}{" "}
                 {currentDate.getFullYear()}
               </h1>
             </div>
 
-            <div className="flex items-center">
+            <div className="flex items-center w-full sm:w-auto justify-between sm:justify-normal">
               <div className="text-right">
-                <div className="text-sm text-gray-400">Monthly spend</div>
-                <div className="text-2xl font-bold">
+                <div className="text-xs sm:text-sm text-gray-400">Monthly spend</div>
+                <div className="text-lg sm:text-2xl font-bold">
                   {calculateMonthlyTotal()}
                 </div>
               </div>
-              <button
-                onClick={toggleDarkMode}
-                className="ml-4 p-2 rounded-full hover:bg-gray-700 transition-colors"
-                aria-label={
-                  isDarkMode ? "Switch to light mode" : "Switch to dark mode"
-                }
-              >
-                {isDarkMode ? "☀️" : "🌙"}
-              </button>
-              <button
-                onClick={() => setSetupVisible(!setupVisible)}
-                className="ml-2 p-2 rounded-full hover:bg-gray-700 transition-colors"
-                aria-label="Settings"
-              >
-                ⚙️
-              </button>
+              <div className="flex">
+                <button
+                  onClick={toggleDarkMode}
+                  className="ml-4 p-2 rounded-full hover:bg-gray-700 transition-colors"
+                  aria-label={
+                    isDarkMode ? "Switch to light mode" : "Switch to dark mode"
+                  }
+                >
+                  {isDarkMode ? "☀️" : "🌙"}
+                </button>
+                <button
+                  onClick={() => setSetupVisible(!setupVisible)}
+                  className="ml-2 p-2 rounded-full hover:bg-gray-700 transition-colors"
+                  aria-label="Settings"
+                >
+                  ⚙️
+                </button>
+              </div>
             </div>
           </div>
 
           {isConnected && (
-            <div className="mb-4 p-2 bg-green-800 bg-opacity-20 border border-green-600 rounded-md text-green-400 flex items-center">
+            <div className="mb-4 p-2 bg-green-800 bg-opacity-20 border border-green-600 rounded-md text-green-400 flex flex-wrap items-center">
               <span className="mr-2">✓</span>
               <span>Connected to Google Sheets</span>
               <button
@@ -543,32 +563,34 @@ const SubscriptionCalendar: React.FC = () => {
           )}
 
           {inDemoMode && (
-            <div className="mb-4 p-2 bg-purple-800 bg-opacity-20 border border-purple-600 rounded-md text-purple-400 flex items-center">
+            <div className="mb-4 p-2 bg-purple-800 bg-opacity-20 border border-purple-600 rounded-md text-purple-400 flex flex-wrap items-center">
               <span className="mr-2">🔍</span>
               <span>Running in demo mode with sample data</span>
-              <button
-                onClick={() => setSetupVisible(true)}
-                className="ml-auto text-xs underline"
-              >
-                Connect to real data
-              </button>
-              <button
-                onClick={toggleDemoMode}
-                className="ml-2 text-xs underline"
-              >
-                Exit demo
-              </button>
+              <div className="ml-auto flex flex-wrap mt-1 sm:mt-0">
+                <button
+                  onClick={() => setSetupVisible(true)}
+                  className="text-xs underline mr-3"
+                >
+                  Connect to real data
+                </button>
+                <button
+                  onClick={toggleDemoMode}
+                  className="text-xs underline"
+                >
+                  Exit demo
+                </button>
+              </div>
             </div>
           )}
 
           {!isConnected && !inDemoMode && !setupVisible && (
-            <div className="mb-4 p-2 bg-blue-800 bg-opacity-20 border border-blue-600 rounded-md text-blue-400 flex items-center">
+            <div className="mb-4 p-2 bg-blue-800 bg-opacity-20 border border-blue-600 rounded-md text-blue-400 flex flex-wrap items-center">
               <span className="mr-2">ℹ️</span>
               <span>
                 Using sample data. Connect to Google Sheets for your own
                 subscriptions.
               </span>
-              <div className="ml-auto flex">
+              <div className="ml-auto flex flex-wrap mt-1 sm:mt-0">
                 <button
                   onClick={() => setSetupVisible(true)}
                   className="text-xs underline mr-3"
@@ -586,7 +608,7 @@ const SubscriptionCalendar: React.FC = () => {
             {getWeekdayNames().map((day) => (
               <div
                 key={day}
-                className="text-center p-2 font-medium bg-gray-800 text-gray-300 rounded-md mx-0.5"
+                className="text-center p-1 sm:p-2 text-xs sm:text-base font-medium bg-gray-800 text-gray-300 rounded-md mx-0.5"
               >
                 {day}
               </div>

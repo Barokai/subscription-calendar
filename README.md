@@ -44,6 +44,16 @@ bun install
 bun run dev
 ```
 
+This tries to use run next dev with the `--experimental-https` flag. If you encounter issues, you may need to run the following command before, and try again (or just continue without HTTPS):
+
+```bash
+# Grab the path to mkcert from the error message
+# ⨯ Failed to generate self-signed certificate. Falling back to http. Error: Command failed: "C:\Users\<yourusername>\AppData\Local\mkcert\mkcert-vx.x.x-windows-amd64.exe" -install"
+
+# open powershell as admin, navigate to the path, and run the command
+mkcert -install
+```
+
 4. Open [http://localhost:3000](http://localhost:3000) in your browser to see the application
 
 ## Google Sheets Integration
