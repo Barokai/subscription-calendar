@@ -435,7 +435,7 @@ const SubscriptionCalendar: React.FC = () => {
   };
   
   // Function to handle clicks outside the subscription detail
-  const handleClickOutside = useCallback((event: MouseEvent) => {
+  const handleClickOutside = useCallback((event: globalThis.MouseEvent) => {
     // Check if the click is outside both subscription icons and detail
     const target = event.target as HTMLElement;
     const isSubscriptionIcon = target.closest('[data-subscription-icon]');
@@ -599,7 +599,7 @@ const SubscriptionCalendar: React.FC = () => {
           {isConnected && (
             <div className="mb-4 p-2 bg-green-800 bg-opacity-20 border border-green-600 rounded-md text-green-400 flex flex-wrap items-center">
               <span className="mr-2">✓</span>
-              <span>Connected to Google Sheets</span>
+              <span className="text-xs sm:text-sm">Connected to Google Sheets</span>
               <button
                 onClick={() => setSetupVisible(true)}
                 className="ml-auto text-xs underline"
@@ -668,38 +668,50 @@ const SubscriptionCalendar: React.FC = () => {
                 ? getSubscriptionsForDay(dayObj.day)
                 : [];
               const isGrayed = !dayObj.isCurrentMonth;
+              
+              // Calculate which row this day belongs to (0-5)
+              const rowIndex = Math.floor(index / 7);
 
               return (
                 <div
                   key={`${dayObj.year}-${dayObj.month}-${dayObj.day}-${index}`}
-                  className={`aspect-square rounded-md flex flex-col p-2 ${
+                  className={`rounded-md flex flex-col p-2 ${
                     isDarkMode ? "bg-gray-800" : "bg-gray-100"
                   } ${isGrayed ? "opacity-40" : ""} ${
                     dayObj.isToday ? "ring-2 ring-blue-500" : ""
                   }`}
+                  style={{ 
+                    // Use paddingBottom instead of aspect-ratio for consistent height
+                    // This creates equal height cells while still allowing them to grow with content
+                    height: 0,
+                    paddingBottom: "100%",
+                    position: "relative"
+                  }}
                 >
-                  <div className="text-right font-medium mb-1">
-                    {dayObj.day}
-                  </div>
-                  <div className="flex flex-wrap gap-1 justify-center">
-                    {daySubscriptions.map((subscription) => (
-                      <div
-                        key={subscription.id}
-                        data-subscription-icon="true"
-                        onMouseEnter={(e: React.MouseEvent) =>
-                          handleSubscriptionHover(subscription, e)
-                        }
-                        onMouseLeave={handleSubscriptionLeave}
-                        onClick={(e: React.MouseEvent) => {
-                          handleSubscriptionClick(subscription, e);
-                        }}
-                        className="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold cursor-pointer hover:scale-110 transition-transform"
-                        style={{ backgroundColor: subscription.color }}
-                        title={subscription.name}
-                      >
-                        {subscription.logo}
-                      </div>
-                    ))}
+                  <div className="absolute inset-0 p-2 flex flex-col">
+                    <div className="text-right font-medium mb-1">
+                      {dayObj.day}
+                    </div>
+                    <div className="flex flex-wrap gap-1 justify-center grow">
+                      {daySubscriptions.map((subscription) => (
+                        <div
+                          key={subscription.id}
+                          data-subscription-icon="true"
+                          onMouseEnter={(e: React.MouseEvent) =>
+                            handleSubscriptionHover(subscription, e)
+                          }
+                          onMouseLeave={handleSubscriptionLeave}
+                          onClick={(e: React.MouseEvent) => {
+                            handleSubscriptionClick(subscription, e);
+                          }}
+                          className="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold cursor-pointer hover:scale-110 transition-transform"
+                          style={{ backgroundColor: subscription.color }}
+                          title={subscription.name}
+                        >
+                          {subscription.logo}
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </div>
               );
