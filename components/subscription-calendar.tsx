@@ -7,7 +7,11 @@ import {
   isConnected as checkConnection,
   isDemoMode,
 } from "./settings-service";
-import { fetchSubscriptions, Subscription } from "./google-sheets-service";
+import { 
+  fetchSubscriptions, 
+  Subscription, 
+  isPaymentInMonth
+} from "./google-sheets-service";
 import { mockSubscriptions } from "../data/mock-subscriptions";
 import { 
   parseDate, 
@@ -235,6 +239,21 @@ const SubscriptionCalendar: React.FC = () => {
     setInDemoMode(newDemoMode);
     saveSettingsToStorage({ demoMode: newDemoMode });
 
+    // Update URL - remove query parameter when leaving demo mode
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href);
+      
+      if (!newDemoMode && url.searchParams.has('demo')) {
+        // Remove the demo parameter when exiting demo mode
+        url.searchParams.delete('demo');
+        window.history.replaceState({}, '', url.toString());
+      } else if (newDemoMode && !url.searchParams.has('demo')) {
+        // Add the demo parameter when entering demo mode
+        url.searchParams.set('demo', 'true');
+        window.history.replaceState({}, '', url.toString());
+      }
+    }
+
     if (newDemoMode) {
       fetchFromGoogleSheets("", ""); // Empty parameters will trigger mock data
     } else {
@@ -275,14 +294,36 @@ const SubscriptionCalendar: React.FC = () => {
   };
 
   const getSubscriptionsForDay = (day: number): Subscription[] => {
-    return subscriptions.filter((sub) => sub.dayOfMonth === day);
+    // Filter subscriptions by day AND check if they should appear in this month based on frequency
+    return subscriptions.filter((sub) => {
+      // First check if the day matches
+      if (sub.dayOfMonth !== day) return false;
+      
+      // Then check if this subscription should be shown in the current month based on frequency
+      const startDate = parseDate(sub.startDate, userLocale);
+      return isPaymentInMonth(
+        sub.frequency,
+        startDate,
+        currentDate.getMonth(),
+        currentDate.getFullYear()
+      );
+    });
   };
 
-  // Calculate total monthly spend
+  // Calculate total monthly spend using actual costs for the current month
   const calculateMonthlyTotal = (): string => {
     if (subscriptions.length === 0) return "0";
     
-    let total = subscriptions.reduce((sum, sub) => sum + sub.amount, 0);
+    // Sum only subscriptions that should appear in this month
+    const currentMonth = currentDate.getMonth();
+    const currentYear = currentDate.getFullYear();
+    
+    let total = subscriptions.reduce((sum, sub) => {
+      const startDate = parseDate(sub.startDate, userLocale);
+      const shouldInclude = isPaymentInMonth(sub.frequency, startDate, currentMonth, currentYear);
+      return sum + (shouldInclude ? sub.amount : 0);
+    }, 0);
+    
     const currency = subscriptions[0]?.currency.replace("€", "EUR") || "EUR";
     
     return total.toLocaleString(userLocale, {
@@ -291,17 +332,68 @@ const SubscriptionCalendar: React.FC = () => {
     });
   };
 
-  // Calculate total spent since start date
+  // Calculate total spent since start date, accounting for frequency
   const calculateTotalSpent = (subscription: Subscription): string => {
-    // Use the parseDate function with the user's locale
+    // Get correctly parsed start date
     const startDate = parseDate(subscription.startDate, userLocale);
     const currentDate = new Date();
     
-    // Calculate months between start date and current date using our utility function
-    const months = monthsBetweenDates(startDate, currentDate);
+    // Log key information for debugging
+    console.log(`Calculating total spent for ${subscription.name}:`);
+    console.log(`- Start date: ${startDate.toISOString()}`);
+    console.log(`- Frequency: ${subscription.frequency}`);
+    console.log(`- Amount: ${subscription.amount}`);
     
-    // Calculate total spent
-    const totalSpent = months * subscription.amount;
+    // Calculate total payments based on frequency
+    let totalPayments = 0;
+    
+    // Get years difference
+    const yearsDiff = currentDate.getFullYear() - startDate.getFullYear();
+    
+    // Get months difference for monthly calculations
+    const rawMonths = yearsDiff * 12 + (currentDate.getMonth() - startDate.getMonth());
+    
+    // Adjust for the day of month
+    let monthsDiff = rawMonths;
+    if (currentDate.getDate() < startDate.getDate()) {
+      monthsDiff--; // Not yet reached the payment day this month
+    }
+    
+    console.log(`- Years difference: ${yearsDiff}`);
+    console.log(`- Months difference: ${monthsDiff}`);
+    
+    switch (subscription.frequency) {
+      case 'yearly':
+        totalPayments = yearsDiff;
+        // If we've passed the anniversary date this year, add one more payment
+        if (
+          currentDate.getMonth() > startDate.getMonth() || 
+          (currentDate.getMonth() === startDate.getMonth() && currentDate.getDate() >= startDate.getDate())
+        ) {
+          totalPayments++;
+        }
+        break;
+        
+      case 'quarterly':
+        totalPayments = Math.floor(monthsDiff / 3);
+        break;
+        
+      case 'biannually':
+        totalPayments = Math.floor(monthsDiff / 6);
+        break;
+        
+      case 'monthly':
+        totalPayments = monthsDiff;
+        break;
+        
+      // ...other frequencies...
+    }
+    
+    // Ensure we never have negative payments
+    totalPayments = Math.max(0, totalPayments);
+    
+    console.log(`- Total payments: ${totalPayments}`);
+    const totalSpent = totalPayments * subscription.amount;
     
     return totalSpent.toLocaleString(userLocale, {
       style: 'currency',

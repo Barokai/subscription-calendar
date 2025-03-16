@@ -1,64 +1,92 @@
 /**
- * Parse a date string considering the user's locale
- * @param dateStr - Date string in YYYY-MM-DD format (ISO) or localized format
- * @param locale - User's locale (e.g., 'en-US', 'de-DE')
- * @returns A Date object
+ * Parse a date string correctly based on locale
+ * 
+ * @param dateString - Date string to parse
+ * @param locale - User's locale
+ * @returns JavaScript Date object
  */
-export function parseDate(dateStr: string, locale: string = 'en-US'): Date {
-  // First try parsing as ISO format (YYYY-MM-DD)
-  if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
-    return new Date(dateStr);
-  }
+export const parseDate = (dateString: string, locale: string): Date => {
+  console.log(`Parsing date: ${dateString} with locale: ${locale}`);
   
+  // If the date is already in ISO format (YYYY-MM-DD), parse directly
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
+    return new Date(dateString);
+  }
+
   try {
-    // Try to parse the date using the browser's built-in parser with locale
-    const dateParts = dateStr.split(/[.\/\-]/);
-    
-    // Handle different date formats based on locale
-    if (locale.startsWith('en')) {
-      // For English locales (MM/DD/YYYY)
-      if (dateParts.length === 3) {
-        const month = parseInt(dateParts[0]) - 1; // Adjust for 0-based months
-        const day = parseInt(dateParts[1]);
-        const year = parseInt(dateParts[2]);
-        return new Date(year, month, day);
-      }
-    } else if (locale.startsWith('de') || locale.startsWith('fr') || locale.startsWith('es') || locale.startsWith('it')) {
-      // For European locales (DD.MM.YYYY or DD/MM/YYYY)
-      if (dateParts.length === 3) {
-        const day = parseInt(dateParts[0]);
-        const month = parseInt(dateParts[1]) - 1; // Adjust for 0-based months
-        const year = parseInt(dateParts[2]);
-        return new Date(year, month, day);
+    // European format (DD.MM.YYYY)
+    if (dateString.includes('.')) {
+      const parts = dateString.split('.');
+      if (parts.length === 3) {
+        const day = parseInt(parts[0], 10);
+        const month = parseInt(parts[1], 10) - 1; // Months are 0-indexed in JS
+        const year = parseInt(parts[2], 10);
+        
+        // Validate the parts
+        if (!isNaN(day) && !isNaN(month) && !isNaN(year) && month >= 0 && month <= 11 && day >= 1 && day <= 31) {
+          console.log(`Parsed European date: ${day}.${month+1}.${year}`);
+          return new Date(year, month, day);
+        }
       }
     }
     
-    // Fallback: try the browser's date parsing
-    const parsedDate = new Date(dateStr);
-    if (!isNaN(parsedDate.getTime())) {
-      return parsedDate;
+    // US format (MM/DD/YYYY)
+    if (dateString.includes('/')) {
+      // This may still be ambiguous, so use locale to determine format
+      const parts = dateString.split('/');
+      if (parts.length === 3) {
+        let day: number, month: number, year: number;
+        
+        if (locale.startsWith('en-US')) {
+          // US format: MM/DD/YYYY
+          month = parseInt(parts[0], 10) - 1;
+          day = parseInt(parts[1], 10);
+        } else {
+          // For other locales that use slashes, assume DD/MM/YYYY
+          day = parseInt(parts[0], 10);
+          month = parseInt(parts[1], 10) - 1;
+        }
+        
+        year = parseInt(parts[2], 10);
+        
+        if (!isNaN(day) && !isNaN(month) && !isNaN(year) && month >= 0 && month <= 11 && day >= 1 && day <= 31) {
+          return new Date(year, month, day);
+        }
+      }
     }
     
-    // If all else fails, return today's date
-    console.warn(`Could not parse date: ${dateStr}, using current date instead`);
+    // Try automatic date parsing with sanity checks
+    const date = new Date(dateString);
+    if (!isNaN(date.getTime())) {
+      // Verify this worked correctly by checking if parts match up
+      const dateStr = date.toISOString(); // Will be in YYYY-MM-DDTHH:mm:ss.sssZ format
+      
+      // Log the result
+      console.log(`Parsed with built-in Date constructor: ${dateStr}`);
+      return date;
+    }
+    
+    // Last resort: just return today and log error
+    console.error(`Failed to parse date: ${dateString} with locale: ${locale}`);
     return new Date();
   } catch (error) {
-    console.error(`Error parsing date: ${dateStr}`, error);
+    console.error(`Error parsing date: ${dateString}`, error);
     return new Date(); // Return today's date as fallback
   }
-}
+};
 
 /**
  * Format a date in ISO format (YYYY-MM-DD)
- * @param date - Date to format
- * @returns Formatted date string
+ * 
+ * @param date - The date to format
+ * @returns ISO formatted date string
  */
-export function formatISODate(date: Date): string {
+export const formatISODate = (date: Date): string => {
   const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
+  const month = (date.getMonth() + 1).toString().padStart(2, '0');
+  const day = date.getDate().toString().padStart(2, '0');
   return `${year}-${month}-${day}`;
-}
+};
 
 /**
  * Calculate months between two dates

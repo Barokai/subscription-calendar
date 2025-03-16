@@ -1,5 +1,6 @@
 import React from 'react';
-import { Subscription } from './google-sheets-service';
+import { Subscription, isPaymentInMonth } from './google-sheets-service';
+import { parseDate } from './date-utils';
 
 interface SubscriptionTrendsProps {
   subscriptions: Subscription[];
@@ -23,10 +24,15 @@ const SubscriptionTrends: React.FC<SubscriptionTrendsProps> = ({
     ? subscriptions[0].currency.replace("€", "EUR") 
     : "USD";
   
-  // Calculate monthly total (current, previous, and next month)
+  // Calculate monthly total that includes only the subscriptions for that month
   const calculateMonthlyTotal = (month: number, year: number): number => {
     if (subscriptions.length === 0) return 0;
-    return subscriptions.reduce((sum, sub) => sum + sub.amount, 0);
+    
+    return subscriptions.reduce((sum, sub) => {
+      const startDate = parseDate(sub.startDate, userLocale);
+      const shouldInclude = isPaymentInMonth(sub.frequency, startDate, month, year);
+      return sum + (shouldInclude ? sub.amount : 0);
+    }, 0);
   };
   
   // Get previous month
