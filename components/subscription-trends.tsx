@@ -62,7 +62,7 @@ const SubscriptionTrends: React.FC<SubscriptionTrendsProps> = ({
     return amount.toLocaleString(userLocale, {
       style: 'currency',
       currency,
-      minimumFractionDigits: 0,
+      minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     });
   };

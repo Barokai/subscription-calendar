@@ -34,7 +34,7 @@ const DaySubscriptionsOverlay: React.FC<DaySubscriptionsOverlayProps> = ({
     return amount.toLocaleString(userLocale, {
       style: 'currency',
       currency,
-      minimumFractionDigits: 0,
+      minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     });
   };

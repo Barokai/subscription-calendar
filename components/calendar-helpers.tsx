@@ -69,39 +69,41 @@ export const SubscriptionIcons: React.FC<{
 
   return (
     <div className={styles.subscriptionsContainer}>
-      {/* Visible subscription icons */}
-      {visibleSubscriptions.map((subscription) => (
-        <div
-          key={subscription.id}
-          data-subscription-icon="true"
-          onMouseEnter={(e) => handleSubscriptionHover(subscription, e)}
-          onMouseLeave={handleSubscriptionLeave}
-          onClick={(e) => {
-            e.stopPropagation();
-            handleSubscriptionClick(subscription, e);
-          }}
-          className={styles.subscriptionIcon}
-          style={{ backgroundColor: subscription.color }}
-          title={subscription.name}
-        >
-          {subscription.logo}
-        </div>
-      ))}
-      
-      {/* Show more button when needed */}
-      {!isExpanded && hasMoreSubscriptions && (
-        <div
-          data-show-more="true"
-          onClick={(e) => {
-            e.stopPropagation();
-            toggleDayExpansion(dayKey);
-          }}
-          className={styles.moreButton}
-          title={`${hiddenCount} more subscription${hiddenCount > 1 ? 's' : ''}`}
-        >
-          +{hiddenCount}
-        </div>
-      )}
+      {/* Create a centered wrapper div for the icons group */}
+      <div className="inline-flex items-center">
+        {visibleSubscriptions.map((subscription) => (
+          <div
+            key={subscription.id}
+            data-subscription-icon="true"
+            onMouseEnter={(e) => handleSubscriptionHover(subscription, e)}
+            onMouseLeave={handleSubscriptionLeave}
+            onClick={(e) => {
+              e.stopPropagation();
+              handleSubscriptionClick(subscription, e);
+            }}
+            className={styles.subscriptionIcon}
+            style={{ backgroundColor: subscription.color }}
+            title={subscription.name}
+          >
+            {subscription.logo}
+          </div>
+        ))}
+        
+        {/* Show more button when needed */}
+        {!isExpanded && hasMoreSubscriptions && (
+          <div
+            data-show-more="true"
+            onClick={(e) => {
+              e.stopPropagation();
+              toggleDayExpansion(dayKey);
+            }}
+            className={styles.moreButton}
+            title={`${hiddenCount} more subscription${hiddenCount > 1 ? 's' : ''}`}
+          >
+            +{hiddenCount}
+          </div>
+        )}
+      </div>
     </div>
   );
 };
