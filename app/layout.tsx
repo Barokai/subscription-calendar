@@ -4,6 +4,17 @@ import "./globals.css";
 
 const inter = Inter({ subsets: ["latin"] });
 
+export const viewport: Viewport = {
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: '#2563EB' }, // Blue color for light mode
+    { media: '(prefers-color-scheme: dark)', color: '#1E40AF' },  // Darker blue for dark mode
+  ],
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+};
+
 export const metadata: Metadata = {
   title: "Subscription Calendar",
   description:
@@ -46,17 +57,13 @@ export const metadata: Metadata = {
     description:
       "Track and manage your subscriptions with our easy-to-use calendar",
     images: ["/og-image.svg"],
-    creator: "@yourhandle",
+    creator: "@barokai",
   },
   robots: {
     index: true,
     follow: true,
   },
 };
-
-export const viewport: Viewport = {
-  themeColor: 'black',
-}
 
 export default function RootLayout({
   children,
