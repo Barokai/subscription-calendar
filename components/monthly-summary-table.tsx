@@ -1,5 +1,6 @@
 import React from 'react';
-import { Subscription } from './google-sheets-service';
+import { Subscription, isPaymentInMonth } from './google-sheets-service';
+import { parseDate } from './date-utils';
 
 interface MonthlySummaryTableProps {
   subscriptions: Subscription[];
@@ -18,7 +19,7 @@ const MonthlySummaryTable: React.FC<MonthlySummaryTableProps> = ({
   isDarkMode,
   onSubscriptionClick,
 }) => {
-  // Group subscriptions by day of month
+  // Group subscriptions by day of month, filtering by frequency
   const subscriptionsByDay: Record<number, Subscription[]> = {};
   
   // Initialize all days of the month
@@ -27,14 +28,18 @@ const MonthlySummaryTable: React.FC<MonthlySummaryTableProps> = ({
     subscriptionsByDay[day] = [];
   }
   
-  // Populate with actual subscriptions
+  // Populate with actual subscriptions that should appear in this month
   subscriptions.forEach(subscription => {
     if (subscription.dayOfMonth <= daysInMonth) {
-      subscriptionsByDay[subscription.dayOfMonth].push(subscription);
+      // Check if this subscription should be shown based on frequency
+      const startDate = parseDate(subscription.startDate, userLocale);
+      if (isPaymentInMonth(subscription.frequency, startDate, month, year)) {
+        subscriptionsByDay[subscription.dayOfMonth].push(subscription);
+      }
     }
   });
   
-  // Calculate daily totals
+  // Calculate daily totals - using actual amounts, not monthly equivalents
   const dailyTotals: Record<number, number> = {};
   Object.entries(subscriptionsByDay).forEach(([day, subs]) => {
     dailyTotals[Number(day)] = subs.reduce((sum, sub) => sum + sub.amount, 0);
@@ -50,7 +55,7 @@ const MonthlySummaryTable: React.FC<MonthlySummaryTableProps> = ({
     return amount.toLocaleString(userLocale, {
       style: 'currency',
       currency,
-      minimumFractionDigits: 0,
+      minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     });
   };
@@ -129,7 +134,7 @@ const MonthlySummaryTable: React.FC<MonthlySummaryTableProps> = ({
           }`}>
             <tr>
               <th className="py-2 px-3 text-left text-xs font-medium" colSpan={2}>
-                Total
+                Monthly Total
               </th>
               <th className="py-2 px-3 text-right text-xs font-medium">
                 {formatCurrency(
