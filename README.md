@@ -47,7 +47,7 @@ bun install
 bun run dev
 ```
 
-This tries to use run next dev with the `--experimental-https` flag. If you encounter issues, you may need to run the following command before, and try again (or just continue without HTTPS):
+This tries to use run `next dev` with the `--experimental-https` flag. If you encounter issues, you may need to run the following command before, and try again (or just continue without HTTPS):
 
 ```bash
 # Grab the path to mkcert from the error message
@@ -57,7 +57,7 @@ This tries to use run next dev with the `--experimental-https` flag. If you enco
 mkcert -install
 ```
 
-4. Open [http://localhost:3000](http://localhost:3000) in your browser to see the application
+4. Open [https://localhost](https://localhost:3000) (or [http://localhost:3000](https://localhost:3000)) in your browser to see the application
 
 ## Google Sheets Integration
 
@@ -95,6 +95,7 @@ To configure directly through the UI:
    - color: The brand color in hex format (e.g., #E50914)
    - logo: A letter or short text to represent the logo
    - startDate: When you first subscribed (YYYY-MM-DD format)
+   - endDate: When subsription ended (YYYY-MM-DD format) `[unused]`
 
 2. Share your Google Sheet to "anyone with the link"
 
