@@ -1,6 +1,7 @@
 import React from "react";
 import { Subscription } from "./google-sheets-service";
 import { parseDate } from "./date-utils";
+import { renderSubscriptionIcon } from "./icon-utils";
 
 interface SubscriptionDetailProps {
   subscription: Subscription;
@@ -187,13 +188,8 @@ const SubscriptionDetail: React.FC<SubscriptionDetailProps> = ({
       )}
 
       <div className="flex items-center mb-4">
-        <div
-          className="w-8 h-8 rounded-full flex items-center justify-center mr-3"
-          style={{ backgroundColor: subscription.color }}
-        >
-          <span className="text-white font-bold text-sm">
-            {subscription.logo}
-          </span>
+        <div className="w-8 h-8 mr-3">
+          {renderSubscriptionIcon(subscription.logo, subscription.color, "w-full h-full", isDarkMode)}
         </div>
         <h3 className="text-lg font-bold">{subscription.name}</h3>
         <div className="ml-auto text-lg font-bold">

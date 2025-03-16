@@ -1,4 +1,10 @@
-import React, { useState, useEffect, useCallback, useRef, MouseEvent } from "react";
+import React, {
+  useState,
+  useEffect,
+  useCallback,
+  useRef,
+  MouseEvent,
+} from "react";
 import SetupInstructions from "./setup-instructions";
 import SubscriptionDetail from "./subscription-detail";
 import {
@@ -7,23 +13,23 @@ import {
   isConnected as checkConnection,
   isDemoMode,
 } from "./settings-service";
-import { 
-  fetchSubscriptions, 
-  Subscription, 
-  isPaymentInMonth 
+import {
+  fetchSubscriptions,
+  Subscription,
+  isPaymentInMonth,
 } from "./google-sheets-service";
 import { mockSubscriptions } from "../data/mock-subscriptions";
-import { 
-  parseDate, 
-  getFirstDayOfWeek, 
-  reorderWeekdaysForLocale, 
-  adjustDayOfWeek 
+import {
+  parseDate,
+  getFirstDayOfWeek,
+  reorderWeekdaysForLocale,
+  adjustDayOfWeek,
 } from "./date-utils";
 import MonthlySummaryTable from "./monthly-summary-table";
 import SubscriptionTrends from "./subscription-trends";
 import DaySubscriptionsOverlay from "./day-subscriptions-overlay";
 import { getSubscriptionsForDay, SubscriptionIcons } from "./calendar-helpers";
-import styles from '../styles/calendar.module.css';
+import styles from "../styles/calendar.module.css";
 import SpendingChart from "./spending-chart";
 
 interface CalendarDayObject {
@@ -45,99 +51,124 @@ const SubscriptionCalendar: React.FC = () => {
   const [isDarkMode, setIsDarkMode] = useState<boolean>(true);
   const [userLocale, setUserLocale] = useState<string>("en-US");
   const [isConnected, setIsConnected] = useState<boolean>(false);
-  const [hoverPosition, setHoverPosition] = useState<{ x: number, y: number }>({ x: 0, y: 0 });
-  const [hoveredSubscription, setHoveredSubscription] = useState<Subscription | null>(null);
-  const [selectedSubscription, setSelectedSubscription] = useState<Subscription | null>(null);
+  const [hoverPosition, setHoverPosition] = useState<{ x: number; y: number }>({
+    x: 0,
+    y: 0,
+  });
+  const [hoveredSubscription, setHoveredSubscription] =
+    useState<Subscription | null>(null);
+  const [selectedSubscription, setSelectedSubscription] =
+    useState<Subscription | null>(null);
   const [inDemoMode, setInDemoMode] = useState<boolean>(false);
   const hoverTimeoutRef = useRef<number | null>(null);
-  const [currentSpreadsheetId, setCurrentSpreadsheetId] = useState<string | undefined>(undefined);
-  const [currentApiKey, setCurrentApiKey] = useState<string | undefined>(undefined);
-  const [useEnvSpreadsheetId, setUseEnvSpreadsheetId] = useState<boolean>(false);
+  const [currentSpreadsheetId, setCurrentSpreadsheetId] = useState<
+    string | undefined
+  >(undefined);
+  const [currentApiKey, setCurrentApiKey] = useState<string | undefined>(
+    undefined
+  );
+  const [useEnvSpreadsheetId, setUseEnvSpreadsheetId] =
+    useState<boolean>(false);
   const [useEnvApiKey, setUseEnvApiKey] = useState<boolean>(false);
-  const [hasEnvSpreadsheetId, setHasEnvSpreadsheetId] = useState<boolean>(false);
+  const [hasEnvSpreadsheetId, setHasEnvSpreadsheetId] =
+    useState<boolean>(false);
   const [hasEnvApiKey, setHasEnvApiKey] = useState<boolean>(false);
-  const [lastFetchTime, setLastFetchTime] = useState<Date | undefined>(undefined);
-  const [expandedDayIndexes, setExpandedDayIndexes] = useState<Set<string>>(new Set());
-  const [selectedDay, setSelectedDay] = useState<{ day: number; month: number; year: number; subscriptions: Subscription[] } | null>(null);
+  const [lastFetchTime, setLastFetchTime] = useState<Date | undefined>(
+    undefined
+  );
+  const [expandedDayIndexes, setExpandedDayIndexes] = useState<Set<string>>(
+    new Set()
+  );
+  const [selectedDay, setSelectedDay] = useState<{
+    day: number;
+    month: number;
+    year: number;
+    subscriptions: Subscription[];
+  } | null>(null);
   const [isMobile, setIsMobile] = useState<boolean>(false);
   const [showSpendingChart, setShowSpendingChart] = useState<boolean>(false);
 
   // Function to fetch data from Google Sheets
-  const fetchFromGoogleSheets = useCallback(async (
-    spreadsheetId: string, 
-    apiKey: string, 
-    useEnvSheet: boolean = false, 
-    useEnvKey: boolean = false
-  ): Promise<void> => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      // Check if we are in demo mode (via query param or setting)
-      const demoMode = isDemoMode();
-      setInDemoMode(demoMode);
-
-      if (demoMode) {
-        // Use mock data if in demo mode
-        await new Promise((resolve) => setTimeout(resolve, 500)); // Simulate API delay
-        setSubscriptions(mockSubscriptions);
-        setIsConnected(false); // We're not actually connected in demo mode
-        setLoading(false);
-        setLastFetchTime(new Date()); // Set last fetch time
-        return;
-      }
-
-      // Verify connection through server API first
+  const fetchFromGoogleSheets = useCallback(
+    async (
+      spreadsheetId: string,
+      apiKey: string,
+      useEnvSheet: boolean = false,
+      useEnvKey: boolean = false
+    ): Promise<void> => {
       try {
-        const response = await fetch('/api/sheets-connect', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            spreadsheetId,
-            apiKey,
-            useEnvSpreadsheetId: useEnvSheet,
-            useEnvApiKey: useEnvKey
-          }),
-        });
-        
-        const result = await response.json();
-        
-        if (!result.success) {
-          throw new Error(result.message || 'Failed to connect to Google Sheets');
+        setLoading(true);
+        setError(null);
+
+        // Check if we are in demo mode (via query param or setting)
+        const demoMode = isDemoMode();
+        setInDemoMode(demoMode);
+
+        if (demoMode) {
+          // Use mock data if in demo mode
+          await new Promise((resolve) => setTimeout(resolve, 500)); // Simulate API delay
+          setSubscriptions(mockSubscriptions);
+          setIsConnected(false); // We're not actually connected in demo mode
+          setLoading(false);
+          setLastFetchTime(new Date()); // Set last fetch time
+          return;
         }
 
-        // Call the Google Sheets API service
-        const data = await fetchSubscriptions(
-          useEnvSheet ? result.spreadsheetId || '' : spreadsheetId,
-          useEnvKey ? 'ENV_KEY_USED' : apiKey,
-          useEnvSheet,
-          useEnvKey
-        );
-        
-        setSubscriptions(data);
-        setIsConnected(true);
-        setError(null);
-        setLastFetchTime(new Date()); // Set last fetch time
+        // Verify connection through server API first
+        try {
+          const response = await fetch("/api/sheets-connect", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              spreadsheetId,
+              apiKey,
+              useEnvSpreadsheetId: useEnvSheet,
+              useEnvApiKey: useEnvKey,
+            }),
+          });
+
+          const result = await response.json();
+
+          if (!result.success) {
+            throw new Error(
+              result.message || "Failed to connect to Google Sheets"
+            );
+          }
+
+          // Call the Google Sheets API service
+          const data = await fetchSubscriptions(
+            useEnvSheet ? result.spreadsheetId || "" : spreadsheetId,
+            useEnvKey ? "ENV_KEY_USED" : apiKey,
+            useEnvSheet,
+            useEnvKey
+          );
+
+          setSubscriptions(data);
+          setIsConnected(true);
+          setError(null);
+          setLastFetchTime(new Date()); // Set last fetch time
+        } catch (err) {
+          console.error("Error fetching data:", err);
+          setError(
+            "Failed to fetch subscription data. Please check your connection settings."
+          );
+          setSubscriptions(mockSubscriptions); // Fallback to mock data on error
+          setIsConnected(false);
+        }
+
+        setLoading(false);
       } catch (err) {
-        console.error("Error fetching data:", err);
-        setError(
-          "Failed to fetch subscription data. Please check your connection settings."
-        );
+        console.error("Unexpected error:", err);
+        setError("An unexpected error occurred while fetching data.");
         setSubscriptions(mockSubscriptions); // Fallback to mock data on error
         setIsConnected(false);
+        setLoading(false);
       }
-
-      setLoading(false);
-    } catch (err) {
-      console.error("Unexpected error:", err);
-      setError("An unexpected error occurred while fetching data.");
-      setSubscriptions(mockSubscriptions); // Fallback to mock data on error
-      setIsConnected(false);
-      setLoading(false);
-    }
-  }, []);
+    },
+    []
+  );
 
   useEffect(() => {
     const initializeApp = async () => {
@@ -154,7 +185,7 @@ const SubscriptionCalendar: React.FC = () => {
         setHasEnvSpreadsheetId(settings.hasEnvSpreadsheetId || false);
         setHasEnvApiKey(settings.hasEnvApiKey || false);
 
-        if (typeof window !== 'undefined') {
+        if (typeof window !== "undefined") {
           // Check for demo mode in URL
           const urlParams = new URLSearchParams(window.location.search);
           const demoParam = urlParams.get("demo");
@@ -173,21 +204,31 @@ const SubscriptionCalendar: React.FC = () => {
 
         // We can have a connection in 3 ways:
         // 1. Using env variables for both spreadsheetId and apiKey
-        const usingEnvVars = settings.useEnvSpreadsheetId && settings.useEnvApiKey &&
-                           settings.hasEnvSpreadsheetId && settings.hasEnvApiKey;
-        
+        const usingEnvVars =
+          settings.useEnvSpreadsheetId &&
+          settings.useEnvApiKey &&
+          settings.hasEnvSpreadsheetId &&
+          settings.hasEnvApiKey;
+
         // 2. Using user-provided settings for both
         const usingUserSettings = settings.spreadsheetId && settings.apiKey;
-        
-        // 3. A mix of env vars and user settings
-        const usingMixedSettings = 
-          (settings.useEnvSpreadsheetId && settings.hasEnvSpreadsheetId && settings.apiKey) ||
-          (settings.useEnvApiKey && settings.hasEnvApiKey && settings.spreadsheetId);
 
-        if (connected && (usingEnvVars || usingUserSettings || usingMixedSettings)) {
+        // 3. A mix of env vars and user settings
+        const usingMixedSettings =
+          (settings.useEnvSpreadsheetId &&
+            settings.hasEnvSpreadsheetId &&
+            settings.apiKey) ||
+          (settings.useEnvApiKey &&
+            settings.hasEnvApiKey &&
+            settings.spreadsheetId);
+
+        if (
+          connected &&
+          (usingEnvVars || usingUserSettings || usingMixedSettings)
+        ) {
           fetchFromGoogleSheets(
-            settings.spreadsheetId || '',
-            settings.apiKey || '',
+            settings.spreadsheetId || "",
+            settings.apiKey || "",
             settings.useEnvSpreadsheetId,
             settings.useEnvApiKey
           );
@@ -208,8 +249,8 @@ const SubscriptionCalendar: React.FC = () => {
   }, [fetchFromGoogleSheets]);
 
   const handleSaveSettings = (
-    spreadsheetId: string, 
-    apiKey: string, 
+    spreadsheetId: string,
+    apiKey: string,
     locale: string,
     useEnvSpreadsheetId: boolean = false,
     useEnvApiKey: boolean = false
@@ -230,8 +271,13 @@ const SubscriptionCalendar: React.FC = () => {
     setCurrentSpreadsheetId(spreadsheetId);
     setCurrentApiKey(apiKey);
     setInDemoMode(false);
-    
-    fetchFromGoogleSheets(spreadsheetId, apiKey, useEnvSpreadsheetId, useEnvApiKey);
+
+    fetchFromGoogleSheets(
+      spreadsheetId,
+      apiKey,
+      useEnvSpreadsheetId,
+      useEnvApiKey
+    );
     setSetupVisible(false);
   };
 
@@ -247,17 +293,17 @@ const SubscriptionCalendar: React.FC = () => {
     saveSettingsToStorage({ demoMode: newDemoMode });
 
     // Update URL - remove query parameter when leaving demo mode
-    if (typeof window !== 'undefined') {
+    if (typeof window !== "undefined") {
       const url = new URL(window.location.href);
-      
-      if (!newDemoMode && url.searchParams.has('demo')) {
+
+      if (!newDemoMode && url.searchParams.has("demo")) {
         // Remove the demo parameter when exiting demo mode
-        url.searchParams.delete('demo');
-        window.history.replaceState({}, '', url.toString());
-      } else if (newDemoMode && !url.searchParams.has('demo')) {
+        url.searchParams.delete("demo");
+        window.history.replaceState({}, "", url.toString());
+      } else if (newDemoMode && !url.searchParams.has("demo")) {
         // Add the demo parameter when entering demo mode
-        url.searchParams.set('demo', 'true');
-        window.history.replaceState({}, '', url.toString());
+        url.searchParams.set("demo", "true");
+        window.history.replaceState({}, "", url.toString());
       }
     }
 
@@ -273,8 +319,8 @@ const SubscriptionCalendar: React.FC = () => {
         settings.apiKey
       ) {
         fetchFromGoogleSheets(
-          settings.spreadsheetId || '',
-          settings.apiKey || '',
+          settings.spreadsheetId || "",
+          settings.apiKey || "",
           settings.useEnvSpreadsheetId,
           settings.useEnvApiKey
         );
@@ -302,23 +348,30 @@ const SubscriptionCalendar: React.FC = () => {
 
   // Calculate total monthly spend using actual costs for the current month
   const calculateMonthlyTotal = (): string => {
-    if (subscriptions.length === 0) return "0";
-    
+    if (subscriptions.length === 0) {
+      return "0";
+    }
+
     // Sum only subscriptions that should appear in this month
     const currentMonth = currentDate.getMonth();
     const currentYear = currentDate.getFullYear();
-    
+
     const total = subscriptions.reduce((sum, sub) => {
       const startDate = parseDate(sub.startDate, userLocale);
-      const shouldInclude = isPaymentInMonth(sub.frequency, startDate, currentMonth, currentYear);
+      const shouldInclude = isPaymentInMonth(
+        sub.frequency,
+        startDate,
+        currentMonth,
+        currentYear
+      );
       return sum + (shouldInclude ? sub.amount : 0);
     }, 0);
-    
+
     const currency = subscriptions[0]?.currency.replace("€", "EUR") || "EUR";
-    
+
     return total.toLocaleString(userLocale, {
       style: "currency",
-      currency
+      currency,
     });
   };
 
@@ -326,23 +379,35 @@ const SubscriptionCalendar: React.FC = () => {
   const getActiveSubscriptionsForMonth = (): Subscription[] => {
     const currentMonth = currentDate.getMonth();
     const currentYear = currentDate.getFullYear();
-    
-    return subscriptions.filter(sub => {
+
+    return subscriptions.filter((sub) => {
       const startDate = parseDate(sub.startDate, userLocale);
-      return isPaymentInMonth(sub.frequency, startDate, currentMonth, currentYear);
+      return isPaymentInMonth(
+        sub.frequency,
+        startDate,
+        currentMonth,
+        currentYear
+      );
     });
   };
-  
+
   // Calculate raw total (number not string)
   const calculateRawMonthlyTotal = (): number => {
-    if (subscriptions.length === 0) return 0;
-    
+    if (subscriptions.length === 0) {
+      return 0;
+    }
+
     const currentMonth = currentDate.getMonth();
     const currentYear = currentDate.getFullYear();
-    
+
     return subscriptions.reduce((sum, sub) => {
       const startDate = parseDate(sub.startDate, userLocale);
-      const shouldInclude = isPaymentInMonth(sub.frequency, startDate, currentMonth, currentYear);
+      const shouldInclude = isPaymentInMonth(
+        sub.frequency,
+        startDate,
+        currentMonth,
+        currentYear
+      );
       return sum + (shouldInclude ? sub.amount : 0);
     }, 0);
   };
@@ -352,66 +417,68 @@ const SubscriptionCalendar: React.FC = () => {
     // Get correctly parsed start date
     const startDate = parseDate(subscription.startDate, userLocale);
     const currentDate = new Date();
-    
+
     // Log key information for debugging
     console.log(`Calculating total spent for ${subscription.name}:`);
     console.log(`- Start date: ${startDate.toISOString()}`);
     console.log(`- Frequency: ${subscription.frequency}`);
     console.log(`- Amount: ${subscription.amount}`);
-    
+
     // Calculate total payments based on frequency
     let totalPayments = 0;
-    
+
     // Get years difference
     const yearsDiff = currentDate.getFullYear() - startDate.getFullYear();
-    
+
     // Get months difference for monthly calculations
-    const rawMonths = yearsDiff * 12 + (currentDate.getMonth() - startDate.getMonth());
-    
+    const rawMonths =
+      yearsDiff * 12 + (currentDate.getMonth() - startDate.getMonth());
+
     // Adjust for the day of month
     let monthsDiff = rawMonths;
     if (currentDate.getDate() < startDate.getDate()) {
       monthsDiff--; // Not yet reached the payment day this month
     }
-    
+
     console.log(`- Years difference: ${yearsDiff}`);
     console.log(`- Months difference: ${monthsDiff}`);
-    
+
     switch (subscription.frequency) {
-      case 'yearly':
+      case "yearly":
         totalPayments = yearsDiff;
         // If we've passed the anniversary date this year, add one more payment
         if (
-          currentDate.getMonth() > startDate.getMonth() || 
-          (currentDate.getMonth() === startDate.getMonth() && currentDate.getDate() >= startDate.getDate())
+          currentDate.getMonth() > startDate.getMonth() ||
+          (currentDate.getMonth() === startDate.getMonth() &&
+            currentDate.getDate() >= startDate.getDate())
         ) {
           totalPayments++;
         }
         break;
-        
-      case 'quarterly':
+
+      case "quarterly":
         totalPayments = Math.floor(monthsDiff / 3);
         break;
-        
-      case 'biannually':
+
+      case "biannually":
         totalPayments = Math.floor(monthsDiff / 6);
         break;
-        
-      case 'monthly':
+
+      case "monthly":
         totalPayments = monthsDiff;
         break;
-        
+
       // ...other frequencies...
     }
-    
+
     // Ensure we never have negative payments
     totalPayments = Math.max(0, totalPayments);
-    
+
     console.log(`- Total payments: ${totalPayments}`);
     const totalSpent = totalPayments * subscription.amount;
-    
+
     return totalSpent.toLocaleString(userLocale, {
-      style: 'currency',
+      style: "currency",
       currency: subscription.currency.replace("€", "EUR") || "EUR",
     });
   };
@@ -420,20 +487,23 @@ const SubscriptionCalendar: React.FC = () => {
     const year = currentDate.getFullYear();
     const month = currentDate.getMonth();
     const today = new Date();
-    
+
     // Get the first day of week based on locale
     const firstDayOfWeek = getFirstDayOfWeek(userLocale);
-    
+
     // Get days in current month and previous month
     const daysInMonth = getDaysInMonth(year, month);
     const daysInPrevMonth = getDaysInMonth(year, month - 1);
-    
+
     // Get first day of month (0 = Sunday, 1 = Monday, etc.)
     const firstDayOfMonth = new Date(year, month, 1).getDay();
-    
+
     // Adjust the first day of month based on the locale's first day of week
-    const adjustedFirstDayOfMonth = adjustDayOfWeek(firstDayOfMonth, firstDayOfWeek);
-    
+    const adjustedFirstDayOfMonth = adjustDayOfWeek(
+      firstDayOfMonth,
+      firstDayOfWeek
+    );
+
     // Calculate days from previous month to display
     const prevMonthDays: CalendarDayObject[] = [];
     for (let i = adjustedFirstDayOfMonth - 1; i >= 0; i--) {
@@ -480,7 +550,7 @@ const SubscriptionCalendar: React.FC = () => {
   const getWeekdayNames = (): string[] => {
     // Get the first day of week based on locale
     const firstDayOfWeek = getFirstDayOfWeek(userLocale);
-    
+
     // Generate weekday names starting from Sunday
     const sundayFirstWeekdays: string[] = [];
     for (let i = 0; i < 7; i++) {
@@ -489,15 +559,20 @@ const SubscriptionCalendar: React.FC = () => {
         date.toLocaleString(userLocale, { weekday: "short" }).toUpperCase()
       );
     }
-    
+
     // Reorder weekdays based on locale's first day of week
     return reorderWeekdaysForLocale(sundayFirstWeekdays, firstDayOfWeek);
   };
 
-  const handleSubscriptionHover = (subscription: Subscription, event: MouseEvent): void => {
+  const handleSubscriptionHover = (
+    subscription: Subscription,
+    event: MouseEvent
+  ): void => {
     // Only handle hover if nothing is selected
-    if (selectedSubscription) return;
-    
+    if (selectedSubscription) {
+      return;
+    }
+
     // Clear any existing timeout
     if (hoverTimeoutRef.current !== null) {
       window.clearTimeout(hoverTimeoutRef.current);
@@ -509,73 +584,89 @@ const SubscriptionCalendar: React.FC = () => {
       setHoverPosition({ x: event.clientX, y: event.clientY });
     }, 100);
   };
-  
-  const handleSubscriptionClick = (subscription: Subscription, event: MouseEvent): void => {
+
+  const handleSubscriptionClick = (
+    subscription: Subscription,
+    event: MouseEvent
+  ): void => {
     // Clear any hover timeout
     if (hoverTimeoutRef.current !== null) {
       window.clearTimeout(hoverTimeoutRef.current);
       setHoveredSubscription(null);
     }
-    
+
     // Toggle selection
     const isDeselecting = subscription === selectedSubscription;
     setSelectedSubscription(isDeselecting ? null : subscription);
-    
+
     if (isDeselecting) {
       return; // If deselecting, no need to update position
     }
-    
+
     // Get viewport dimensions
     const viewportWidth = window.innerWidth;
     const isMobile = viewportWidth < 640; // sm breakpoint in Tailwind
-    
+
     // Calculate position - centered on mobile
-    const x = isMobile 
-      ? viewportWidth / 2  // Center on screen for mobile
-      : event.clientX;     // Use click position for desktop
-      
+    const x = isMobile
+      ? viewportWidth / 2 // Center on screen for mobile
+      : event.clientX; // Use click position for desktop
+
     // Position above the clicked element by default
     const y = event.clientY;
-    
+
     setHoverPosition({ x, y });
-    
+
     // Add event listener for click outside
     setTimeout(() => {
-      document.addEventListener('click', handleClickOutside);
+      document.addEventListener("click", handleClickOutside);
     }, 0);
   };
-  
+
   // Function to handle clicks outside the subscription detail
-  const handleClickOutside = useCallback((event: globalThis.MouseEvent) => {
-    // Check if the click is outside both subscription icons and detail
-    const target = event.target as HTMLElement;
-    const isSubscriptionIcon = target.closest('[data-subscription-icon]');
-    const isSubscriptionDetail = target.closest('[data-subscription-detail]');
-    const isShowMoreButton = target.closest('[data-show-more]');
-    
-    // Handle clicks outside subscription detail
-    if (!isSubscriptionIcon && !isSubscriptionDetail && selectedSubscription) {
-      setSelectedSubscription(null);
-      document.removeEventListener('click', handleClickOutside);
-    }
-    
-    // Handle clicks outside of day cells (to collapse expanded days)
-    if (!isShowMoreButton && !isSubscriptionIcon && expandedDayIndexes.size > 0) {
-      setExpandedDayIndexes(new Set());
-    }
-  }, [selectedSubscription, expandedDayIndexes]);
-  
+  const handleClickOutside = useCallback(
+    (event: globalThis.MouseEvent) => {
+      // Check if the click is outside both subscription icons and detail
+      const target = event.target as HTMLElement;
+      const isSubscriptionIcon = target.closest("[data-subscription-icon]");
+      const isSubscriptionDetail = target.closest("[data-subscription-detail]");
+      const isShowMoreButton = target.closest("[data-show-more]");
+
+      // Handle clicks outside subscription detail
+      if (
+        !isSubscriptionIcon &&
+        !isSubscriptionDetail &&
+        selectedSubscription
+      ) {
+        setSelectedSubscription(null);
+        document.removeEventListener("click", handleClickOutside);
+      }
+
+      // Handle clicks outside of day cells (to collapse expanded days)
+      if (
+        !isShowMoreButton &&
+        !isSubscriptionIcon &&
+        expandedDayIndexes.size > 0
+      ) {
+        setExpandedDayIndexes(new Set());
+      }
+    },
+    [selectedSubscription, expandedDayIndexes]
+  );
+
   // Make sure to clean up event listener when component unmounts
   useEffect(() => {
     return () => {
-      document.removeEventListener('click', handleClickOutside);
+      document.removeEventListener("click", handleClickOutside);
     };
   }, [handleClickOutside]);
 
   const handleSubscriptionLeave = (): void => {
     // Don't clear hover if an item is selected
-    if (selectedSubscription) return;
-    
+    if (selectedSubscription) {
+      return;
+    }
+
     if (hoverTimeoutRef.current !== null) {
       window.clearTimeout(hoverTimeoutRef.current);
     }
@@ -594,29 +685,34 @@ const SubscriptionCalendar: React.FC = () => {
     }
     setExpandedDayIndexes(newExpandedDays);
   };
-  
+
   // Check if we're on mobile
   useEffect(() => {
     const checkMobile = () => {
       setIsMobile(window.innerWidth < 640);
     };
-    
+
     checkMobile();
-    window.addEventListener('resize', checkMobile);
-    
+    window.addEventListener("resize", checkMobile);
+
     return () => {
-      window.removeEventListener('resize', checkMobile);
+      window.removeEventListener("resize", checkMobile);
     };
   }, []);
-  
+
   // Function to handle day click (for mobile view)
-  const handleDayClick = (day: number, month: number, year: number, subscriptions: Subscription[]) => {
+  const handleDayClick = (
+    day: number,
+    month: number,
+    year: number,
+    subscriptions: Subscription[]
+  ) => {
     // Only show overlay if there are subscriptions and we're on mobile
     if (subscriptions.length > 0 && isMobile) {
       setSelectedDay({ day, month, year, subscriptions });
     }
   };
-  
+
   // Function to close the day overlay
   const closeDayOverlay = () => {
     setSelectedDay(null);
@@ -718,7 +814,7 @@ const SubscriptionCalendar: React.FC = () => {
         )}
 
         {/* Spending Chart */}
-        <SpendingChart 
+        <SpendingChart
           subscriptions={getActiveSubscriptionsForMonth()}
           totalSpend={calculateRawMonthlyTotal()}
           userLocale={userLocale}
@@ -749,15 +845,21 @@ const SubscriptionCalendar: React.FC = () => {
             </div>
 
             <div className="flex items-center w-full sm:w-auto justify-between sm:justify-normal">
-              <div 
+              <div
                 className="text-right cursor-pointer group relative"
                 onClick={() => setShowSpendingChart(true)}
-                onMouseEnter={() => window.innerWidth > 768 && setShowSpendingChart(true)}
+                onMouseEnter={() =>
+                  window.innerWidth > 768 && setShowSpendingChart(true)
+                }
               >
-                <div className="text-xs sm:text-sm text-gray-400">Monthly spend</div>
+                <div className="text-xs sm:text-sm text-gray-400">
+                  Monthly spend
+                </div>
                 <div className="text-lg sm:text-2xl font-bold group-hover:text-blue-500 transition-colors">
                   {calculateMonthlyTotal()}
-                  <div className="hidden group-hover:inline-block ml-2 text-xs">📊</div>
+                  <div className="hidden group-hover:inline-block ml-2 text-xs">
+                    📊
+                  </div>
                 </div>
               </div>
 
@@ -785,7 +887,9 @@ const SubscriptionCalendar: React.FC = () => {
           {isConnected && (
             <div className="mb-4 p-2 bg-green-800 bg-opacity-20 border border-green-600 rounded-md text-green-400 flex flex-wrap items-center">
               <span className="mr-2">✓</span>
-              <span className="text-xs sm:text-sm">Connected to Google Sheets</span>
+              <span className="text-xs sm:text-sm">
+                Connected to Google Sheets
+              </span>
               <button
                 onClick={() => setSetupVisible(true)}
                 className="ml-auto text-xs underline"
@@ -806,10 +910,7 @@ const SubscriptionCalendar: React.FC = () => {
                 >
                   Connect to real data
                 </button>
-                <button
-                  onClick={toggleDemoMode}
-                  className="text-xs underline"
-                >
+                <button onClick={toggleDemoMode} className="text-xs underline">
                   Exit demo
                 </button>
               </div>
@@ -852,7 +953,13 @@ const SubscriptionCalendar: React.FC = () => {
             {renderCalendar().map((dayObj, index) => {
               const dayKey = `${dayObj.year}-${dayObj.month}-${dayObj.day}`;
               const daySubscriptions = dayObj.isCurrentMonth
-                ? getSubscriptionsForDay(dayObj.day, subscriptions, userLocale, currentDate.getMonth(), currentDate.getFullYear())
+                ? getSubscriptionsForDay(
+                    dayObj.day,
+                    subscriptions,
+                    userLocale,
+                    currentDate.getMonth(),
+                    currentDate.getFullYear()
+                  )
                 : [];
               const isGrayed = !dayObj.isCurrentMonth;
 
@@ -864,13 +971,21 @@ const SubscriptionCalendar: React.FC = () => {
                   } ${isGrayed ? "opacity-40" : ""} ${
                     dayObj.isToday ? "ring-2 ring-blue-500" : ""
                   }`}
-                  onClick={() => isMobile && handleDayClick(dayObj.day, dayObj.month, dayObj.year, daySubscriptions)}
+                  onClick={() =>
+                    isMobile &&
+                    handleDayClick(
+                      dayObj.day,
+                      dayObj.month,
+                      dayObj.year,
+                      daySubscriptions
+                    )
+                  }
                 >
                   <div className={styles.calendarDayContent}>
                     <div className="text-right font-medium mb-1">
                       {dayObj.day}
                     </div>
-                    
+
                     {/* Use the extracted SubscriptionIcons component */}
                     {daySubscriptions.length > 0 && (
                       <SubscriptionIcons
@@ -881,6 +996,7 @@ const SubscriptionCalendar: React.FC = () => {
                         handleSubscriptionLeave={handleSubscriptionLeave}
                         handleSubscriptionClick={handleSubscriptionClick}
                         toggleDayExpansion={toggleDayExpansion}
+                        isDarkMode={isDarkMode}
                       />
                     )}
                   </div>
@@ -888,17 +1004,22 @@ const SubscriptionCalendar: React.FC = () => {
               );
             })}
           </div>
-          
+
           {/* Monthly Summary Table */}
-          <MonthlySummaryTable 
+          <MonthlySummaryTable
             subscriptions={subscriptions}
             month={currentDate.getMonth()}
             year={currentDate.getFullYear()}
             userLocale={userLocale}
             isDarkMode={isDarkMode}
             onSubscriptionClick={handleSubscriptionClick}
+            onSubscriptionHover={handleSubscriptionHover}
+            onSubscriptionLeave={handleSubscriptionLeave}
+            onDayClick={(day, month, year, daySubscriptions) => {
+              handleDayClick(day, month, year, daySubscriptions);
+            }}
           />
-          
+
           {/* Subscription Trends */}
           <SubscriptionTrends
             subscriptions={subscriptions}

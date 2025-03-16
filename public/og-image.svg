@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <rect width="1200" height="630" fill="#2563EB" />
+  
+  <!-- Calendar Icon -->
+  <rect x="300" y="190" width="250" height="250" rx="15" fill="none" stroke="#FFFFFF" stroke-width="10" />
+  <line x1="300" y1="250" x2="550" y2="250" stroke="#FFFFFF" stroke-width="8" />
+  <line x1="350" y1="190" x2="350" y2="440" stroke="#FFFFFF" stroke-width="5" opacity="0.7" />
+  <line x1="400" y1="190" x2="400" y2="440" stroke="#FFFFFF" stroke-width="5" opacity="0.7" />
+  <line x1="450" y1="190" x2="450" y2="440" stroke="#FFFFFF" stroke-width="5" opacity="0.7" />
+  <line x1="500" y1="190" x2="500" y2="440" stroke="#FFFFFF" stroke-width="5" opacity="0.7" />
+  <rect x="425" y="300" width="50" height="50" fill="#FFFFFF" />
+
+  <!-- Text -->
+  <text x="600" y="280" font-family="Arial, sans-serif" font-size="70" font-weight="bold" fill="#FFFFFF">Subscription</text>
+  <text x="600" y="350" font-family="Arial, sans-serif" font-size="70" font-weight="bold" fill="#FFFFFF">Calendar</text>
+</svg>
