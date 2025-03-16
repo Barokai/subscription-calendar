@@ -21,17 +21,6 @@ const STORAGE_KEYS = {
   DEMO_MODE: 'subscriptionCalendarDemoMode'
 };
 
-// Load environment variables if on server side
-const getEnvVariables = () => {
-  if (typeof process !== 'undefined' && process.env) {
-    return {
-      envSpreadsheetId: process.env.SHEETS_SPREADSHEET_ID || undefined,
-      envApiKey: process.env.SHEETS_API_KEY || undefined
-    };
-  }
-  return { envSpreadsheetId: undefined, envApiKey: undefined };
-};
-
 // Check if environment variables are available (client-side call)
 export const checkEnvVariables = async (): Promise<{ hasEnvSpreadsheetId: boolean; hasEnvApiKey: boolean }> => {
   try {

@@ -35,7 +35,7 @@ export const parseDate = (dateString: string, locale: string): Date => {
       // This may still be ambiguous, so use locale to determine format
       const parts = dateString.split('/');
       if (parts.length === 3) {
-        let day: number, month: number, year: number;
+        let day: number, month: number;
         
         if (locale.startsWith('en-US')) {
           // US format: MM/DD/YYYY
@@ -47,7 +47,7 @@ export const parseDate = (dateString: string, locale: string): Date => {
           month = parseInt(parts[1], 10) - 1;
         }
         
-        year = parseInt(parts[2], 10);
+        const year = parseInt(parts[2], 10);
         
         if (!isNaN(day) && !isNaN(month) && !isNaN(year) && month >= 0 && month <= 11 && day >= 1 && day <= 31) {
           return new Date(year, month, day);

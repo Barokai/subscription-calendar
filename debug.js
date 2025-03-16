@@ -3,6 +3,7 @@ console.log('Node version:', process.version);
 console.log('Environment check:');
 
 try {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
   const fs = require('fs');
   
   // Check if components directory exists

@@ -306,7 +306,7 @@ const SubscriptionCalendar: React.FC = () => {
     const currentMonth = currentDate.getMonth();
     const currentYear = currentDate.getFullYear();
     
-    let total = subscriptions.reduce((sum, sub) => {
+    const total = subscriptions.reduce((sum, sub) => {
       const startDate = parseDate(sub.startDate, userLocale);
       const shouldInclude = isPaymentInMonth(sub.frequency, startDate, currentMonth, currentYear);
       return sum + (shouldInclude ? sub.amount : 0);
@@ -500,7 +500,6 @@ const SubscriptionCalendar: React.FC = () => {
     
     // Get viewport dimensions
     const viewportWidth = window.innerWidth;
-    const viewportHeight = window.innerHeight;
     const isMobile = viewportWidth < 640; // sm breakpoint in Tailwind
     
     // Calculate position - centered on mobile
@@ -509,7 +508,7 @@ const SubscriptionCalendar: React.FC = () => {
       : event.clientX;     // Use click position for desktop
       
     // Position above the clicked element by default
-    let y = event.clientY;
+    const y = event.clientY;
     
     setHoverPosition({ x, y });
     

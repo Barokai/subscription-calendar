@@ -81,7 +81,7 @@ const SetupInstructions: React.FC<SetupInstructionsProps> = ({
       
       <div className="mb-6">
         <h3 className="text-xl font-semibold mb-2">Step 1: Create a Google Sheet</h3>
-        <p className="">Share the sheet to "anyone with the link"</p>
+        <p className="">Share the sheet to &quot;anyone with the link&quot;</p>
         <p className="mb-3">Create a Google Sheet with the following columns:</p>
         <ul className="list-disc ml-6 mb-4">
           <li>name - The subscription name (e.g., Netflix)</li>

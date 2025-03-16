@@ -35,7 +35,7 @@ const DebugInfo: React.FC = () => {
           }
         }
       } catch (error) {
-        localStorageData['error'] = 'Unable to access localStorage';
+        localStorageData['error'] = `Unable to access localStorage, ${error}`;
       }
 
       // Get query parameters

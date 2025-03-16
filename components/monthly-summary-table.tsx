@@ -62,8 +62,8 @@ const MonthlySummaryTable: React.FC<MonthlySummaryTableProps> = ({
   
   // Filter to only show days with subscriptions
   const activeDays = Object.entries(subscriptionsByDay)
-    .filter(([_, subs]) => subs.length > 0)
-    .map(([day, _]) => Number(day))
+    .filter(([, subs]) => subs.length > 0)
+    .map(([day,]) => Number(day))
     .sort((a, b) => a - b);
   
   return (
