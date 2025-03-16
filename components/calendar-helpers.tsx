@@ -1,9 +1,9 @@
-import React from 'react';
-import { Subscription } from './google-sheets-service';
-import { isPaymentInMonth } from './google-sheets-service';
-import styles from '../styles/calendar.module.css';
-import { parseDate } from './date-utils';
-import { renderSubscriptionIcon } from './icon-utils';
+import React from "react";
+import { Subscription } from "./google-sheets-service";
+import { isPaymentInMonth } from "./google-sheets-service";
+import styles from "../styles/calendar.module.css";
+import { parseDate } from "./date-utils";
+import { renderSubscriptionIcon } from "./icon-utils";
 
 // Maximum number of subscriptions to show before "show more" button
 const MAX_VISIBLE_ICONS = 2;
@@ -20,8 +20,10 @@ export const getSubscriptionsForDay = (
 ): Subscription[] => {
   return subscriptions.filter((sub) => {
     // First check if the day matches
-    if (sub.dayOfMonth !== day) return false;
-    
+    if (sub.dayOfMonth !== day) {
+      return false;
+    }
+
     // Then check if this subscription should be shown in this month based on frequency
     const startDate = parseDate(sub.startDate, userLocale);
     return isPaymentInMonth(
@@ -40,9 +42,15 @@ export const SubscriptionIcons: React.FC<{
   daySubscriptions: Subscription[];
   expandedDays: Set<string>;
   dayKey: string;
-  handleSubscriptionHover: (subscription: Subscription, event: React.MouseEvent) => void;
+  handleSubscriptionHover: (
+    subscription: Subscription,
+    event: React.MouseEvent
+  ) => void;
   handleSubscriptionLeave: () => void;
-  handleSubscriptionClick: (subscription: Subscription, event: React.MouseEvent) => void;
+  handleSubscriptionClick: (
+    subscription: Subscription,
+    event: React.MouseEvent
+  ) => void;
   toggleDayExpansion: (dayKey: string) => void;
   isDarkMode: boolean; // Add isDarkMode prop
 }> = ({
@@ -53,19 +61,19 @@ export const SubscriptionIcons: React.FC<{
   handleSubscriptionLeave,
   handleSubscriptionClick,
   toggleDayExpansion,
-  isDarkMode
+  isDarkMode,
 }) => {
   const isExpanded = expandedDays.has(dayKey);
   const hasMoreSubscriptions = daySubscriptions.length > MAX_VISIBLE_ICONS;
-  
+
   // Decide which subscriptions to show based on expansion state
-  const visibleSubscriptions = isExpanded 
-    ? daySubscriptions 
+  const visibleSubscriptions = isExpanded
+    ? daySubscriptions
     : daySubscriptions.slice(0, MAX_VISIBLE_ICONS);
-  
+
   // How many additional subscriptions are hidden
   const hiddenCount = daySubscriptions.length - MAX_VISIBLE_ICONS;
-  
+
   if (daySubscriptions.length === 0) {
     return null;
   }
@@ -87,10 +95,15 @@ export const SubscriptionIcons: React.FC<{
             className={styles.subscriptionIcon}
             title={subscription.name}
           >
-            {renderSubscriptionIcon(subscription.logo, subscription.color, "w-full h-full", isDarkMode)}
+            {renderSubscriptionIcon(
+              subscription.logo,
+              subscription.color,
+              "w-full h-full",
+              isDarkMode
+            )}
           </div>
         ))}
-        
+
         {/* Show more button when needed */}
         {!isExpanded && hasMoreSubscriptions && (
           <div
@@ -100,7 +113,9 @@ export const SubscriptionIcons: React.FC<{
               toggleDayExpansion(dayKey);
             }}
             className={styles.moreButton}
-            title={`${hiddenCount} more subscription${hiddenCount > 1 ? 's' : ''}`}
+            title={`${hiddenCount} more subscription${
+              hiddenCount > 1 ? "s" : ""
+            }`}
           >
             +{hiddenCount}
           </div>
