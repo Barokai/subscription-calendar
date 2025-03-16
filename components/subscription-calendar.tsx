@@ -10,18 +10,20 @@ import {
 import { 
   fetchSubscriptions, 
   Subscription, 
-  isPaymentInMonth
+  isPaymentInMonth 
 } from "./google-sheets-service";
 import { mockSubscriptions } from "../data/mock-subscriptions";
 import { 
   parseDate, 
-  monthsBetweenDates, 
   getFirstDayOfWeek, 
   reorderWeekdaysForLocale, 
-  adjustDayOfWeek
+  adjustDayOfWeek 
 } from "./date-utils";
 import MonthlySummaryTable from "./monthly-summary-table";
 import SubscriptionTrends from "./subscription-trends";
+import DaySubscriptionsOverlay from "./day-subscriptions-overlay";
+import { getSubscriptionsForDay, SubscriptionIcons } from "./calendar-helpers";
+import styles from '../styles/calendar.module.css';
 
 interface CalendarDayObject {
   day: number;
@@ -54,6 +56,9 @@ const SubscriptionCalendar: React.FC = () => {
   const [hasEnvSpreadsheetId, setHasEnvSpreadsheetId] = useState<boolean>(false);
   const [hasEnvApiKey, setHasEnvApiKey] = useState<boolean>(false);
   const [lastFetchTime, setLastFetchTime] = useState<Date | undefined>(undefined);
+  const [expandedDayIndexes, setExpandedDayIndexes] = useState<Set<string>>(new Set());
+  const [selectedDay, setSelectedDay] = useState<{ day: number; month: number; year: number; subscriptions: Subscription[] } | null>(null);
+  const [isMobile, setIsMobile] = useState<boolean>(false);
 
   // Function to fetch data from Google Sheets
   const fetchFromGoogleSheets = useCallback(async (
@@ -293,23 +298,6 @@ const SubscriptionCalendar: React.FC = () => {
     setCurrentDate(newDate);
   };
 
-  const getSubscriptionsForDay = (day: number): Subscription[] => {
-    // Filter subscriptions by day AND check if they should appear in this month based on frequency
-    return subscriptions.filter((sub) => {
-      // First check if the day matches
-      if (sub.dayOfMonth !== day) return false;
-      
-      // Then check if this subscription should be shown in the current month based on frequency
-      const startDate = parseDate(sub.startDate, userLocale);
-      return isPaymentInMonth(
-        sub.frequency,
-        startDate,
-        currentDate.getMonth(),
-        currentDate.getFullYear()
-      );
-    });
-  };
-
   // Calculate total monthly spend using actual costs for the current month
   const calculateMonthlyTotal = (): string => {
     if (subscriptions.length === 0) return "0";
@@ -537,12 +525,19 @@ const SubscriptionCalendar: React.FC = () => {
     const target = event.target as HTMLElement;
     const isSubscriptionIcon = target.closest('[data-subscription-icon]');
     const isSubscriptionDetail = target.closest('[data-subscription-detail]');
+    const isShowMoreButton = target.closest('[data-show-more]');
     
-    if (!isSubscriptionIcon && !isSubscriptionDetail) {
+    // Handle clicks outside subscription detail
+    if (!isSubscriptionIcon && !isSubscriptionDetail && selectedSubscription) {
       setSelectedSubscription(null);
       document.removeEventListener('click', handleClickOutside);
     }
-  }, []);
+    
+    // Handle clicks outside of day cells (to collapse expanded days)
+    if (!isShowMoreButton && !isSubscriptionIcon && expandedDayIndexes.size > 0) {
+      setExpandedDayIndexes(new Set());
+    }
+  }, [selectedSubscription, expandedDayIndexes]);
   
   // Make sure to clean up event listener when component unmounts
   useEffect(() => {
@@ -561,6 +556,44 @@ const SubscriptionCalendar: React.FC = () => {
     hoverTimeoutRef.current = window.setTimeout(() => {
       setHoveredSubscription(null);
     }, 300);
+  };
+
+  // Function to toggle expansion state of a calendar day
+  const toggleDayExpansion = (dayKey: string) => {
+    const newExpandedDays = new Set(expandedDayIndexes);
+    if (newExpandedDays.has(dayKey)) {
+      newExpandedDays.delete(dayKey);
+    } else {
+      newExpandedDays.add(dayKey);
+    }
+    setExpandedDayIndexes(newExpandedDays);
+  };
+  
+  // Check if we're on mobile
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 640);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    
+    return () => {
+      window.removeEventListener('resize', checkMobile);
+    };
+  }, []);
+  
+  // Function to handle day click (for mobile view)
+  const handleDayClick = (day: number, month: number, year: number, subscriptions: Subscription[]) => {
+    // Only show overlay if there are subscriptions and we're on mobile
+    if (subscriptions.length > 0 && isMobile) {
+      setSelectedDay({ day, month, year, subscriptions });
+    }
+  };
+  
+  // Function to close the day overlay
+  const closeDayOverlay = () => {
+    setSelectedDay(null);
   };
 
   if (loading) {
@@ -641,6 +674,20 @@ const SubscriptionCalendar: React.FC = () => {
             useEnvApiKey={useEnvApiKey}
             onSaveSettings={handleSaveSettings}
             onCancel={() => setSetupVisible(false)}
+          />
+        )}
+
+        {/* Day Subscriptions Overlay (for mobile) */}
+        {selectedDay && (
+          <DaySubscriptionsOverlay
+            day={selectedDay.day}
+            month={selectedDay.month}
+            year={selectedDay.year}
+            subscriptions={selectedDay.subscriptions}
+            userLocale={userLocale}
+            isDarkMode={isDarkMode}
+            onClose={closeDayOverlay}
+            onSubscriptionClick={handleSubscriptionClick}
           />
         )}
 
@@ -761,54 +808,39 @@ const SubscriptionCalendar: React.FC = () => {
 
           <div className="grid grid-cols-7 gap-1">
             {renderCalendar().map((dayObj, index) => {
+              const dayKey = `${dayObj.year}-${dayObj.month}-${dayObj.day}`;
               const daySubscriptions = dayObj.isCurrentMonth
-                ? getSubscriptionsForDay(dayObj.day)
+                ? getSubscriptionsForDay(dayObj.day, subscriptions, userLocale, currentDate.getMonth(), currentDate.getFullYear())
                 : [];
               const isGrayed = !dayObj.isCurrentMonth;
-              
-              // Calculate which row this day belongs to (0-5)
-              const rowIndex = Math.floor(index / 7);
 
               return (
                 <div
-                  key={`${dayObj.year}-${dayObj.month}-${dayObj.day}-${index}`}
-                  className={`rounded-md flex flex-col p-2 ${
+                  key={`${dayKey}-${index}`}
+                  className={`rounded-md ${styles.calendarDay} ${
                     isDarkMode ? "bg-gray-800" : "bg-gray-100"
                   } ${isGrayed ? "opacity-40" : ""} ${
                     dayObj.isToday ? "ring-2 ring-blue-500" : ""
                   }`}
-                  style={{ 
-                    // Use paddingBottom instead of aspect-ratio for consistent height
-                    // This creates equal height cells while still allowing them to grow with content
-                    height: 0,
-                    paddingBottom: "100%",
-                    position: "relative"
-                  }}
+                  onClick={() => isMobile && handleDayClick(dayObj.day, dayObj.month, dayObj.year, daySubscriptions)}
                 >
-                  <div className="absolute inset-0 p-2 flex flex-col">
+                  <div className={styles.calendarDayContent}>
                     <div className="text-right font-medium mb-1">
                       {dayObj.day}
                     </div>
-                    <div className="flex flex-wrap gap-1 justify-center grow">
-                      {daySubscriptions.map((subscription) => (
-                        <div
-                          key={subscription.id}
-                          data-subscription-icon="true"
-                          onMouseEnter={(e: React.MouseEvent) =>
-                            handleSubscriptionHover(subscription, e)
-                          }
-                          onMouseLeave={handleSubscriptionLeave}
-                          onClick={(e: React.MouseEvent) => {
-                            handleSubscriptionClick(subscription, e);
-                          }}
-                          className="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold cursor-pointer hover:scale-110 transition-transform"
-                          style={{ backgroundColor: subscription.color }}
-                          title={subscription.name}
-                        >
-                          {subscription.logo}
-                        </div>
-                      ))}
-                    </div>
+                    
+                    {/* Use the extracted SubscriptionIcons component */}
+                    {daySubscriptions.length > 0 && (
+                      <SubscriptionIcons
+                        daySubscriptions={daySubscriptions}
+                        expandedDays={expandedDayIndexes}
+                        dayKey={dayKey}
+                        handleSubscriptionHover={handleSubscriptionHover}
+                        handleSubscriptionLeave={handleSubscriptionLeave}
+                        handleSubscriptionClick={handleSubscriptionClick}
+                        toggleDayExpansion={toggleDayExpansion}
+                      />
+                    )}
                   </div>
                 </div>
               );
