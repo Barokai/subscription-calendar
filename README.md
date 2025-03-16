@@ -2,6 +2,9 @@
 
 A visual calendar application that helps you track and manage your recurring subscriptions.
 
+> [!NOTE] Inspiration/Acknowledgement
+> Inspired by a component created by [LN dev](https://github.com/ln-dev7): <https://ui.lndev.me/components/subscriptions-calendar>
+
 ## Features
 
 - Monthly calendar view of subscription payments
