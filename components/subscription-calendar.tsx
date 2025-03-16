@@ -24,6 +24,7 @@ import SubscriptionTrends from "./subscription-trends";
 import DaySubscriptionsOverlay from "./day-subscriptions-overlay";
 import { getSubscriptionsForDay, SubscriptionIcons } from "./calendar-helpers";
 import styles from '../styles/calendar.module.css';
+import SpendingChart from "./spending-chart";
 
 interface CalendarDayObject {
   day: number;
@@ -59,6 +60,7 @@ const SubscriptionCalendar: React.FC = () => {
   const [expandedDayIndexes, setExpandedDayIndexes] = useState<Set<string>>(new Set());
   const [selectedDay, setSelectedDay] = useState<{ day: number; month: number; year: number; subscriptions: Subscription[] } | null>(null);
   const [isMobile, setIsMobile] = useState<boolean>(false);
+  const [showSpendingChart, setShowSpendingChart] = useState<boolean>(false);
 
   // Function to fetch data from Google Sheets
   const fetchFromGoogleSheets = useCallback(async (
@@ -318,6 +320,31 @@ const SubscriptionCalendar: React.FC = () => {
       style: "currency",
       currency
     });
+  };
+
+  // Get active subscriptions for the current month (for chart)
+  const getActiveSubscriptionsForMonth = (): Subscription[] => {
+    const currentMonth = currentDate.getMonth();
+    const currentYear = currentDate.getFullYear();
+    
+    return subscriptions.filter(sub => {
+      const startDate = parseDate(sub.startDate, userLocale);
+      return isPaymentInMonth(sub.frequency, startDate, currentMonth, currentYear);
+    });
+  };
+  
+  // Calculate raw total (number not string)
+  const calculateRawMonthlyTotal = (): number => {
+    if (subscriptions.length === 0) return 0;
+    
+    const currentMonth = currentDate.getMonth();
+    const currentYear = currentDate.getFullYear();
+    
+    return subscriptions.reduce((sum, sub) => {
+      const startDate = parseDate(sub.startDate, userLocale);
+      const shouldInclude = isPaymentInMonth(sub.frequency, startDate, currentMonth, currentYear);
+      return sum + (shouldInclude ? sub.amount : 0);
+    }, 0);
   };
 
   // Calculate total spent since start date, accounting for frequency
@@ -690,6 +717,16 @@ const SubscriptionCalendar: React.FC = () => {
           />
         )}
 
+        {/* Spending Chart */}
+        <SpendingChart 
+          subscriptions={getActiveSubscriptionsForMonth()}
+          totalSpend={calculateRawMonthlyTotal()}
+          userLocale={userLocale}
+          isDarkMode={isDarkMode}
+          isVisible={showSpendingChart}
+          onClose={() => setShowSpendingChart(false)}
+        />
+
         <div className="p-4 md:p-6">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
             <div className="flex items-center">
@@ -712,12 +749,18 @@ const SubscriptionCalendar: React.FC = () => {
             </div>
 
             <div className="flex items-center w-full sm:w-auto justify-between sm:justify-normal">
-              <div className="text-right">
+              <div 
+                className="text-right cursor-pointer group relative"
+                onClick={() => setShowSpendingChart(true)}
+                onMouseEnter={() => window.innerWidth > 768 && setShowSpendingChart(true)}
+              >
                 <div className="text-xs sm:text-sm text-gray-400">Monthly spend</div>
-                <div className="text-lg sm:text-2xl font-bold">
+                <div className="text-lg sm:text-2xl font-bold group-hover:text-blue-500 transition-colors">
                   {calculateMonthlyTotal()}
+                  <div className="hidden group-hover:inline-block ml-2 text-xs">📊</div>
                 </div>
               </div>
+
               <div className="flex">
                 <button
                   onClick={toggleDarkMode}
