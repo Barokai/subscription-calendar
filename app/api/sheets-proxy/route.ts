@@ -1,4 +1,4 @@
-import type { NextApiRequest, NextApiResponse } from 'next';
+import { NextRequest, NextResponse } from 'next/server';
 
 type SheetProxyRequest = {
   spreadsheetId: string;
@@ -12,14 +12,7 @@ type SheetProxyRequest = {
  * Server-side proxy for Google Sheets API requests
  * This allows us to use environment variables securely without exposing them to the client
  */
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse
-) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
-
+export async function POST(request: NextRequest) {
   try {
     const { 
       spreadsheetId: clientSpreadsheetId, 
@@ -27,7 +20,7 @@ export default async function handler(
       useEnvSpreadsheetId,
       useEnvApiKey,
       apiKey: clientApiKey
-    } = req.body as SheetProxyRequest;
+    }: SheetProxyRequest = await request.json();
     
     // Use environment variables when specified
     const spreadsheetId = useEnvSpreadsheetId 
@@ -40,9 +33,10 @@ export default async function handler(
 
     // Validate configuration
     if (!spreadsheetId || !apiKey) {
-      return res.status(400).json({ 
-        error: 'Missing required configuration values' 
-      });
+      return NextResponse.json(
+        { error: 'Missing required configuration values' },
+        { status: 400 }
+      );
     }
 
     // Construct Google Sheets API URL
@@ -53,16 +47,17 @@ export default async function handler(
     
     if (!response.ok) {
       const errorData = await response.json();
-      return res.status(response.status).json(errorData);
+      return NextResponse.json(errorData, { status: response.status });
     }
     
     // Return the spreadsheet data
     const data = await response.json();
-    return res.status(200).json(data);
+    return NextResponse.json(data);
   } catch (error) {
     console.error('Error in sheets-proxy:', error);
-    return res.status(500).json({ 
-      error: 'Failed to fetch data from Google Sheets API' 
-    });
+    return NextResponse.json(
+      { error: 'Failed to fetch data from Google Sheets API' },
+      { status: 500 }
+    );
   }
 }

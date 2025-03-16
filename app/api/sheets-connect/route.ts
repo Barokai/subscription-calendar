@@ -1,4 +1,4 @@
-import type { NextApiRequest, NextApiResponse } from 'next';
+import { NextRequest, NextResponse } from 'next/server';
 
 type SheetsConnectRequest = {
   // Client-side override values, used if provided
@@ -9,6 +9,7 @@ type SheetsConnectRequest = {
   useEnvApiKey?: boolean;
 };
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 type SheetsConnectResponse = {
   success: boolean;
   message?: string;
@@ -20,20 +21,13 @@ type SheetsConnectResponse = {
  * API route that handles Google Sheets connection using environment variables
  * when specified, falling back to client-provided values when needed
  */
-export default function handler(
-  req: NextApiRequest,
-  res: NextApiResponse<SheetsConnectResponse>
-) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ success: false, message: 'Method not allowed' });
-  }
-
+export async function POST(request: NextRequest) {
   const { 
     spreadsheetId: clientSpreadsheetId, 
     apiKey: clientApiKey,
     useEnvSpreadsheetId,
     useEnvApiKey 
-  } = req.body as SheetsConnectRequest;
+  }: SheetsConnectRequest = await request.json();
   
   // Determine which values to use (environment or client-provided)
   const spreadsheetId = useEnvSpreadsheetId 
@@ -46,16 +40,16 @@ export default function handler(
 
   // Validation
   if (!spreadsheetId || !apiKey) {
-    return res.status(400).json({ 
+    return NextResponse.json({ 
       success: false, 
       message: 'Missing required configuration values' 
-    });
+    }, { status: 400 });
   }
 
   // Here you could test the connection to verify the credentials work
   // For now, we'll just assume they're valid
 
-  return res.status(200).json({ 
+  return NextResponse.json({ 
     success: true, 
     spreadsheetId: spreadsheetId,
     hasApiKey: !!apiKey

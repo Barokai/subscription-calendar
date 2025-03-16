@@ -86,7 +86,10 @@ const SpendingChart: React.FC<SpendingChartProps> = ({
   const chartSegments: ChartSegment[] = [];
   let cumulativePercentage = 0;
   
-  validSubscriptions.forEach(subscription => {
+  // Sort subscriptions by amount in descending order for better visual representation
+  const sortedSubscriptions = [...validSubscriptions].sort((a, b) => b.amount - a.amount);
+  
+  sortedSubscriptions.forEach(subscription => {
     const percentage = (subscription.amount / totalSpend) * 100;
     const startAngle = (cumulativePercentage / 100) * 360;
     cumulativePercentage += percentage;
