@@ -881,6 +881,7 @@ const SubscriptionCalendar: React.FC = () => {
                         handleSubscriptionLeave={handleSubscriptionLeave}
                         handleSubscriptionClick={handleSubscriptionClick}
                         toggleDayExpansion={toggleDayExpansion}
+                        isDarkMode={isDarkMode}
                       />
                     )}
                   </div>
@@ -897,6 +898,11 @@ const SubscriptionCalendar: React.FC = () => {
             userLocale={userLocale}
             isDarkMode={isDarkMode}
             onSubscriptionClick={handleSubscriptionClick}
+            onSubscriptionHover={handleSubscriptionHover}
+            onSubscriptionLeave={handleSubscriptionLeave}
+            onDayClick={(day, month, year, daySubscriptions) => {
+              handleDayClick(day, month, year, daySubscriptions);
+            }}
           />
           
           {/* Subscription Trends */}

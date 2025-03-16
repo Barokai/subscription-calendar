@@ -1,6 +1,7 @@
 import React from 'react';
 import { Subscription, isPaymentInMonth } from './google-sheets-service';
 import { parseDate } from './date-utils';
+import { renderSubscriptionIcon } from './icon-utils';
 
 interface MonthlySummaryTableProps {
   subscriptions: Subscription[];
@@ -9,6 +10,9 @@ interface MonthlySummaryTableProps {
   userLocale: string;
   isDarkMode: boolean;
   onSubscriptionClick: (subscription: Subscription, event: React.MouseEvent) => void;
+  onSubscriptionHover?: (subscription: Subscription, event: React.MouseEvent) => void;
+  onSubscriptionLeave?: () => void;
+  onDayClick?: (day: number, month: number, year: number, subscriptions: Subscription[]) => void;
 }
 
 const MonthlySummaryTable: React.FC<MonthlySummaryTableProps> = ({
@@ -18,6 +22,9 @@ const MonthlySummaryTable: React.FC<MonthlySummaryTableProps> = ({
   userLocale,
   isDarkMode,
   onSubscriptionClick,
+  onSubscriptionHover,
+  onSubscriptionLeave,
+  onDayClick,
 }) => {
   // Group subscriptions by day of month, filtering by frequency
   const subscriptionsByDay: Record<number, Subscription[]> = {};
@@ -96,7 +103,11 @@ const MonthlySummaryTable: React.FC<MonthlySummaryTableProps> = ({
           <tbody className={`${isDarkMode ? 'divide-y divide-gray-700' : 'divide-y divide-gray-200'}`}>
             {activeDays.length > 0 ? (
               activeDays.map(day => (
-                <tr key={day} className={isDarkMode ? 'bg-gray-800' : 'bg-white'}>
+                <tr 
+                  key={day} 
+                  className={`${isDarkMode ? 'bg-gray-800' : 'bg-white'} cursor-pointer hover:bg-opacity-90`}
+                  onClick={() => onDayClick && onDayClick(day, month, year, subscriptionsByDay[day])}
+                >
                   <td className="py-3 px-3 whitespace-nowrap text-sm font-medium">
                     {day}
                   </td>
@@ -106,12 +117,21 @@ const MonthlySummaryTable: React.FC<MonthlySummaryTableProps> = ({
                         <div
                           key={subscription.id}
                           data-subscription-icon="true"
-                          onClick={(e: React.MouseEvent) => onSubscriptionClick(subscription, e)}
-                          className="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold cursor-pointer hover:scale-110 transition-transform"
-                          style={{ backgroundColor: subscription.color }}
+                          onClick={(e: React.MouseEvent) => {
+                            e.stopPropagation(); // Prevent row click when clicking on an icon
+                            onSubscriptionClick(subscription, e);
+                          }}
+                          onMouseEnter={(e: React.MouseEvent) => {
+                            if (onSubscriptionHover) {
+                              e.stopPropagation();
+                              onSubscriptionHover(subscription, e);
+                            }
+                          }}
+                          onMouseLeave={onSubscriptionLeave}
+                          className="w-6 h-6 cursor-pointer hover:scale-110 transition-transform"
                           title={subscription.name}
                         >
-                          {subscription.logo}
+                          {renderSubscriptionIcon(subscription.logo, subscription.color, "w-full h-full", isDarkMode)}
                         </div>
                       ))}
                     </div>

@@ -6,7 +6,7 @@
  * @returns JavaScript Date object
  */
 export const parseDate = (dateString: string, locale: string): Date => {
-  console.log(`Parsing date: ${dateString} with locale: ${locale}`);
+  // console.log(`Parsing date: ${dateString} with locale: ${locale}`);
   
   // If the date is already in ISO format (YYYY-MM-DD), parse directly
   if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {

@@ -3,6 +3,7 @@ import { Subscription } from './google-sheets-service';
 import { isPaymentInMonth } from './google-sheets-service';
 import styles from '../styles/calendar.module.css';
 import { parseDate } from './date-utils';
+import { renderSubscriptionIcon } from './icon-utils';
 
 // Maximum number of subscriptions to show before "show more" button
 const MAX_VISIBLE_ICONS = 2;
@@ -43,6 +44,7 @@ export const SubscriptionIcons: React.FC<{
   handleSubscriptionLeave: () => void;
   handleSubscriptionClick: (subscription: Subscription, event: React.MouseEvent) => void;
   toggleDayExpansion: (dayKey: string) => void;
+  isDarkMode: boolean; // Add isDarkMode prop
 }> = ({
   daySubscriptions,
   expandedDays,
@@ -50,7 +52,8 @@ export const SubscriptionIcons: React.FC<{
   handleSubscriptionHover,
   handleSubscriptionLeave,
   handleSubscriptionClick,
-  toggleDayExpansion
+  toggleDayExpansion,
+  isDarkMode
 }) => {
   const isExpanded = expandedDays.has(dayKey);
   const hasMoreSubscriptions = daySubscriptions.length > MAX_VISIBLE_ICONS;
@@ -82,10 +85,9 @@ export const SubscriptionIcons: React.FC<{
               handleSubscriptionClick(subscription, e);
             }}
             className={styles.subscriptionIcon}
-            style={{ backgroundColor: subscription.color }}
             title={subscription.name}
           >
-            {subscription.logo}
+            {renderSubscriptionIcon(subscription.logo, subscription.color, "w-full h-full", isDarkMode)}
           </div>
         ))}
         

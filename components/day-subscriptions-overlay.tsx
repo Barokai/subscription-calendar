@@ -1,5 +1,6 @@
 import React from 'react';
 import { Subscription } from './google-sheets-service';
+import { renderSubscriptionIcon } from './icon-utils';
 
 interface DaySubscriptionsOverlayProps {
   day: number;
@@ -22,81 +23,56 @@ const DaySubscriptionsOverlay: React.FC<DaySubscriptionsOverlayProps> = ({
   onClose,
   onSubscriptionClick
 }) => {
-  // Format the date
-  const formattedDate = new Date(year, month, day).toLocaleDateString(
-    userLocale,
-    { day: 'numeric', month: 'long', year: 'numeric' }
-  );
-
-  // Format currency for totals
-  const formatCurrency = (amount: number): string => {
-    const currency = subscriptions[0]?.currency.replace("€", "EUR") || "EUR";
-    return amount.toLocaleString(userLocale, {
-      style: 'currency',
-      currency,
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    });
-  };
-
-  // Calculate total for the day
-  const dailyTotal = subscriptions.reduce((sum, sub) => sum + sub.amount, 0);
+  // Format the date for display
+  const displayDate = new Date(year, month, day).toLocaleDateString(userLocale, {
+    weekday: 'long',
+    month: 'long',
+    day: 'numeric'
+  });
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50">
-      <div
-        className={`relative w-full max-w-md rounded-lg shadow-lg ${
-          isDarkMode ? 'bg-gray-800 text-white' : 'bg-white text-gray-800'
-        } p-4 max-h-[90vh] overflow-auto`}
+      <div 
+        className={`w-full max-w-md rounded-lg shadow-xl p-4 ${
+          isDarkMode ? "bg-gray-800 text-white" : "bg-white text-gray-800"
+        }`}
       >
-        <button
-          onClick={onClose}
-          className="absolute top-3 right-3 text-gray-400 hover:text-gray-500"
-          aria-label="Close"
-        >
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </button>
-
-        <h2 className="text-xl font-bold mb-4">{formattedDate}</h2>
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-lg font-semibold">{displayDate}</h3>
+          <button 
+            onClick={onClose}
+            className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-700"
+          >
+            ✕
+          </button>
+        </div>
         
         <div className="space-y-3">
           {subscriptions.map(subscription => (
             <div 
-              key={subscription.id}
-              className={`p-3 rounded-lg flex items-center cursor-pointer ${
-                isDarkMode ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-100 hover:bg-gray-200'
-              }`}
+              key={subscription.id} 
+              className={`p-3 rounded-md ${
+                isDarkMode ? "bg-gray-700" : "bg-gray-100"
+              } cursor-pointer hover:opacity-90 transition-opacity`}
               onClick={(e) => onSubscriptionClick(subscription, e)}
             >
-              <div
-                className="w-10 h-10 rounded-full flex items-center justify-center text-white text-lg font-bold mr-4"
-                style={{ backgroundColor: subscription.color }}
-              >
-                {subscription.logo}
-              </div>
-              
-              <div className="flex-grow">
-                <div className="font-semibold">{subscription.name}</div>
-                <div className="text-sm text-gray-400">
-                  {subscription.frequency.charAt(0).toUpperCase() + subscription.frequency.slice(1)}
+              <div className="flex items-center">
+                <div className="w-10 h-10 mr-3">
+                  {renderSubscriptionIcon(subscription.logo, subscription.color, "w-full h-full", isDarkMode)}
                 </div>
-              </div>
-              
-              <div className="text-lg font-bold">
-                {formatCurrency(subscription.amount)}
+                <div>
+                  <div className="font-medium">{subscription.name}</div>
+                  <div className="text-sm opacity-80">
+                    {subscription.amount.toLocaleString(userLocale, {
+                      style: "currency",
+                      currency: subscription.currency.replace("€", "EUR") || "EUR",
+                    })}
+                  </div>
+                </div>
               </div>
             </div>
           ))}
         </div>
-        
-        {subscriptions.length > 1 && (
-          <div className="border-t mt-4 pt-3 flex justify-between items-center">
-            <span className="font-medium">Total for {day}</span>
-            <span className="text-xl font-bold">{formatCurrency(dailyTotal)}</span>
-          </div>
-        )}
       </div>
     </div>
   );

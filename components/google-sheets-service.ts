@@ -2,6 +2,7 @@
 
 import { formatISODate } from "./date-utils";
 import { mockSubscriptions } from "../data/mock-subscriptions";
+import { findSubscriptionMapping } from "../data/subscription-mappings";
 
 export interface Subscription {
   id: number;
@@ -281,8 +282,8 @@ export const fetchSubscriptions = async (
         const currency = row[currencyIndex];
         const frequency = row[frequencyIndex];
         const dayOfMonth = parseInt(row[dayOfMonthIndex], 10);
-        const color = row[colorIndex];
-        const logo = row[logoIndex];
+        let color = row[colorIndex];
+        let logo = row[logoIndex];
         const startDate = row[startDateIndex];
         // Get optional end date if it exists
         const endDate =
@@ -296,12 +297,23 @@ export const fetchSubscriptions = async (
           isNaN(amount) ||
           !currency ||
           !frequency ||
-          isNaN(dayOfMonth) ||
-          !color ||
-          !logo ||
-          !startDate
+          isNaN(dayOfMonth)
         ) {
           console.warn(`Row ${index + 1} has invalid data, skipping`);
+          return null;
+        }
+
+        // Try to find a matching subscription to get standardized color and logo
+        const subscriptionMatch = findSubscriptionMapping(name);
+        if (subscriptionMatch) {
+          // Only override color and logo if they were found in the mapping
+          color = subscriptionMatch.color || color;
+          logo = subscriptionMatch.logo || logo;
+        }
+
+        // Check if color and logo are still available after mapping
+        if (!color || !logo) {
+          console.warn(`Row ${index + 1} is missing color or logo, skipping`);
           return null;
         }
 
