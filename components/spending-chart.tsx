@@ -69,7 +69,8 @@ const SpendingChart: React.FC<SpendingChartProps> = ({
     return amount.toLocaleString(userLocale, {
       style: 'currency',
       currency,
-      maximumFractionDigits: 0
+      maximumFractionDigits: 2,
+      minimumFractionDigits: 2
     });
   };
 
@@ -286,7 +287,7 @@ const SpendingChart: React.FC<SpendingChartProps> = ({
               <div className="flex-1 min-w-0">
                 <div className="font-medium truncate">{segment.subscription.name}</div>
                 <div className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                  {formatCurrency(segment.subscription.amount)} ({segment.percentage.toFixed(1)}%)
+                  {formatCurrency(segment.subscription.amount)} ({segment.percentage.toFixed(2)}%)
                 </div>
               </div>
             </div>
