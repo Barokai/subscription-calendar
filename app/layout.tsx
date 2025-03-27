@@ -1,19 +1,18 @@
-import type { Metadata, Viewport } from "next";
-import { Inter } from "next/font/google";
-import "./globals.css";
+import './globals.css'
+import type { Metadata, Viewport } from 'next'
+import { Inter } from 'next/font/google'
 
-const inter = Inter({ subsets: ["latin"] });
+const inter = Inter({ subsets: ['latin'] })
 
 export const viewport: Viewport = {
   themeColor: [
-    { media: '(prefers-color-scheme: light)', color: '#2563EB' }, // Blue color for light mode
-    { media: '(prefers-color-scheme: dark)', color: '#1E40AF' },  // Darker blue for dark mode
+    { media: '(prefers-color-scheme: light)', color: '#2563EB' },
+    { media: '(prefers-color-scheme: dark)', color: '#1E40AF' },
   ],
   width: 'device-width',
   initialScale: 1,
   maximumScale: 1,
-  userScalable: false,
-};
+}
 
 export const metadata: Metadata = {
   title: "Subscription Calendar",
@@ -68,11 +67,11 @@ export const metadata: Metadata = {
 export default function RootLayout({
   children,
 }: {
-  children: React.ReactNode;
+  children: React.ReactNode
 }) {
   return (
     <html lang="en">
       <body className={inter.className}>{children}</body>
     </html>
-  );
+  )
 }
