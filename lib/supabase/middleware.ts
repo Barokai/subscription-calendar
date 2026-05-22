@@ -44,14 +44,18 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // Email allowlist check
+  // Email allowlist check — default-deny when ALLOWED_EMAILS is not configured
   if (user && !isPublicPath) {
     const allowedEmails = (process.env.ALLOWED_EMAILS ?? "")
       .split(",")
       .map((e) => e.trim().toLowerCase())
       .filter(Boolean);
 
-    if (allowedEmails.length > 0 && !allowedEmails.includes(user.email?.toLowerCase() ?? "")) {
+    // If allowlist is empty (env var unset), deny all logins to prevent open access
+    if (
+      allowedEmails.length === 0 ||
+      !allowedEmails.includes(user.email?.toLowerCase() ?? "")
+    ) {
       await supabase.auth.signOut();
       const url = request.nextUrl.clone();
       url.pathname = "/unauthorized";

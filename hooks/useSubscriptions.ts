@@ -19,6 +19,7 @@ export function useSubscriptions(demoMode: boolean, mockData: Subscription[]) {
     if (demoMode) {
       setSubscriptions(mockData);
       setLoading(false);
+      setError(null);
       return;
     }
 

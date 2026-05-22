@@ -52,7 +52,7 @@ function fromDb(row: DbRow): Subscription {
     id: row.id,
     userId: row.user_id,
     name: row.name,
-    amount: row.amount,
+    amount: parseFloat(String(row.amount)), // PostgREST may return numeric as string
     currency: row.currency,
     frequency: row.frequency,
     dayOfMonth: row.day_of_month,
@@ -94,9 +94,13 @@ export async function createSubscription(input: SubscriptionInput): Promise<Subs
   const supabase = createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
+  if (!user) {
+    throw new Error("Not authenticated. Please sign in before adding subscriptions.");
+  }
+
   const { data, error } = await supabase
     .from("subscriptions")
-    .insert({ ...toDb(input), user_id: user!.id })
+    .insert({ ...toDb(input), user_id: user.id })
     .select()
     .single();
 

@@ -102,7 +102,7 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({
             </div>
           )}
           <h2 className="text-lg font-bold flex-1">{isEdit ? "Edit Subscription" : "Add Subscription"}</h2>
-          <button onClick={onCancel} className="text-gray-400 hover:text-gray-200 ml-2">✕</button>
+          <button type="button" aria-label="Close" onClick={onCancel} className="text-gray-400 hover:text-gray-200 ml-2">✕</button>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-3">
@@ -203,7 +203,7 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({
               <input
                 className={`${inputCls} flex-1`}
                 value={color}
-                onChange={e => setColor(e.target.value.replace(/^#/, ""))}
+                onChange={e => setColor(e.target.value.replace(/[^0-9a-fA-F]/g, "").slice(0, 6))}
                 placeholder="hex without # e.g. E50914"
                 maxLength={6}
               />

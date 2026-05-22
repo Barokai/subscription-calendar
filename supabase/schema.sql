@@ -1,5 +1,9 @@
 -- Run this in the Supabase SQL editor to set up the schema.
 
+-- pgcrypto is required for gen_random_uuid(); most Supabase projects have it
+-- enabled by default, but this makes the script self-contained.
+create extension if not exists pgcrypto;
+
 create table if not exists public.subscriptions (
   id           uuid        primary key default gen_random_uuid(),
   user_id      uuid        not null references auth.users(id) on delete cascade,
@@ -39,7 +43,7 @@ $$;
 
 create trigger set_updated_at
   before update on public.subscriptions
-  for each row execute procedure public.handle_updated_at();
+  for each row execute function public.handle_updated_at();
 
 -- Useful index for per-user queries
 create index if not exists subscriptions_user_id_idx
