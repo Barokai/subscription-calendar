@@ -1,5 +1,6 @@
 import React from 'react';
-import { Subscription, isPaymentInMonth } from './google-sheets-service';
+import { Subscription } from '@/lib/subscriptions';
+import { isPaymentInMonth } from './google-sheets-service';
 import { parseDate } from './date-utils';
 import { renderSubscriptionIcon } from './icon-utils';
 
@@ -131,7 +132,7 @@ const MonthlySummaryTable: React.FC<MonthlySummaryTableProps> = ({
                           className="w-6 h-6 cursor-pointer hover:scale-110 transition-transform"
                           title={subscription.name}
                         >
-                          {renderSubscriptionIcon(subscription.logo, subscription.color, "w-full h-full", isDarkMode)}
+                          {renderSubscriptionIcon(subscription.name, subscription.color, "w-full h-full")}
                         </div>
                       ))}
                     </div>

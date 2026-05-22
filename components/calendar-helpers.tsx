@@ -1,5 +1,5 @@
 import React from "react";
-import { Subscription } from "./google-sheets-service";
+import { Subscription } from "@/lib/subscriptions";
 import { isPaymentInMonth } from "./google-sheets-service";
 import styles from "../styles/calendar.module.css";
 import { parseDate } from "./date-utils";
@@ -8,9 +8,6 @@ import { renderSubscriptionIcon } from "./icon-utils";
 // Maximum number of subscriptions to show before "show more" button
 const MAX_VISIBLE_ICONS = 2;
 
-/**
- * Get subscriptions for a specific day
- */
 export const getSubscriptionsForDay = (
   day: number,
   subscriptions: Subscription[],
@@ -19,19 +16,9 @@ export const getSubscriptionsForDay = (
   currentYear: number
 ): Subscription[] => {
   return subscriptions.filter((sub) => {
-    // First check if the day matches
-    if (sub.dayOfMonth !== day) {
-      return false;
-    }
-
-    // Then check if this subscription should be shown in this month based on frequency
+    if (sub.dayOfMonth !== day) { return false; }
     const startDate = parseDate(sub.startDate, userLocale);
-    return isPaymentInMonth(
-      sub.frequency,
-      startDate,
-      currentMonth,
-      currentYear
-    );
+    return isPaymentInMonth(sub.frequency, startDate, currentMonth, currentYear);
   });
 };
 
@@ -52,7 +39,6 @@ export const SubscriptionIcons: React.FC<{
     event: React.MouseEvent
   ) => void;
   toggleDayExpansion: (dayKey: string) => void;
-  isDarkMode: boolean; // Add isDarkMode prop
 }> = ({
   daySubscriptions,
   expandedDays,
@@ -61,7 +47,6 @@ export const SubscriptionIcons: React.FC<{
   handleSubscriptionLeave,
   handleSubscriptionClick,
   toggleDayExpansion,
-  isDarkMode,
 }) => {
   const isExpanded = expandedDays.has(dayKey);
   const hasMoreSubscriptions = daySubscriptions.length > MAX_VISIBLE_ICONS;
@@ -96,10 +81,9 @@ export const SubscriptionIcons: React.FC<{
             title={subscription.name}
           >
             {renderSubscriptionIcon(
-              subscription.logo,
+              subscription.name,
               subscription.color,
-              "w-full h-full",
-              isDarkMode
+              "w-full h-full"
             )}
           </div>
         ))}

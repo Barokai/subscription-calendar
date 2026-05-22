@@ -5,19 +5,13 @@ import React, {
   useRef,
   MouseEvent,
 } from "react";
-import SetupInstructions from "./setup-instructions";
 import SubscriptionDetail from "./subscription-detail";
 import {
   loadSettings,
   saveSettings as saveSettingsToStorage,
-  isConnected as checkConnection,
-  isDemoMode,
 } from "./settings-service";
-import {
-  fetchSubscriptions,
-  Subscription,
-  isPaymentInMonth,
-} from "./google-sheets-service";
+import { Subscription } from "@/lib/subscriptions";
+import { isPaymentInMonth } from "./google-sheets-service";
 import { mockSubscriptions } from "../data/mock-subscriptions";
 import {
   parseDate,
@@ -31,6 +25,9 @@ import DaySubscriptionsOverlay from "./day-subscriptions-overlay";
 import { getSubscriptionsForDay, SubscriptionIcons } from "./calendar-helpers";
 import styles from "../styles/calendar.module.css";
 import SpendingChart from "./spending-chart";
+import { useSubscriptions } from "@/hooks/useSubscriptions";
+import SubscriptionForm from "./SubscriptionForm";
+import { createClient } from "@/lib/supabase/client";
 
 interface CalendarDayObject {
   day: number;
@@ -44,288 +41,68 @@ interface CalendarDayObject {
 
 const SubscriptionCalendar: React.FC = () => {
   const [currentDate, setCurrentDate] = useState<Date>(new Date());
-  const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
-  const [setupVisible, setSetupVisible] = useState<boolean>(false);
   const [isDarkMode, setIsDarkMode] = useState<boolean>(true);
-  const [userLocale, setUserLocale] = useState<string>("en-US");
-  const [isConnected, setIsConnected] = useState<boolean>(false);
-  const [hoverPosition, setHoverPosition] = useState<{ x: number; y: number }>({
-    x: 0,
-    y: 0,
-  });
-  const [hoveredSubscription, setHoveredSubscription] =
-    useState<Subscription | null>(null);
-  const [selectedSubscription, setSelectedSubscription] =
-    useState<Subscription | null>(null);
+  const [userLocale, setUserLocale] = useState<string>("de-AT");
   const [inDemoMode, setInDemoMode] = useState<boolean>(false);
+  const [hoverPosition, setHoverPosition] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  const [hoveredSubscription, setHoveredSubscription] = useState<Subscription | null>(null);
+  const [selectedSubscription, setSelectedSubscription] = useState<Subscription | null>(null);
   const hoverTimeoutRef = useRef<number | null>(null);
-  const [currentSpreadsheetId, setCurrentSpreadsheetId] = useState<
-    string | undefined
-  >(undefined);
-  const [currentApiKey, setCurrentApiKey] = useState<string | undefined>(
-    undefined
-  );
-  const [useEnvSpreadsheetId, setUseEnvSpreadsheetId] =
-    useState<boolean>(false);
-  const [useEnvApiKey, setUseEnvApiKey] = useState<boolean>(false);
-  const [hasEnvSpreadsheetId, setHasEnvSpreadsheetId] =
-    useState<boolean>(false);
-  const [hasEnvApiKey, setHasEnvApiKey] = useState<boolean>(false);
-  const [lastFetchTime, setLastFetchTime] = useState<Date | undefined>(
-    undefined
-  );
-  const [expandedDayIndexes, setExpandedDayIndexes] = useState<Set<string>>(
-    new Set()
-  );
+  const [expandedDayIndexes, setExpandedDayIndexes] = useState<Set<string>>(new Set());
   const [selectedDay, setSelectedDay] = useState<{
-    day: number;
-    month: number;
-    year: number;
-    subscriptions: Subscription[];
+    day: number; month: number; year: number; subscriptions: Subscription[];
   } | null>(null);
   const [isMobile, setIsMobile] = useState<boolean>(false);
   const [showSpendingChart, setShowSpendingChart] = useState<boolean>(false);
+  const [showAddForm, setShowAddForm] = useState<boolean>(false);
+  const [editingSubscription, setEditingSubscription] = useState<Subscription | null>(null);
+  const [lastFetchTime, setLastFetchTime] = useState<Date | undefined>(undefined);
 
-  // Function to fetch data from Google Sheets
-  const fetchFromGoogleSheets = useCallback(
-    async (
-      spreadsheetId: string,
-      apiKey: string,
-      useEnvSheet: boolean = false,
-      useEnvKey: boolean = false
-    ): Promise<void> => {
-      try {
-        setLoading(true);
-        setError(null);
+  const { subscriptions, loading, error, add, update, remove } = useSubscriptions(inDemoMode, mockSubscriptions);
 
-        // Check if we are in demo mode (via query param or setting)
-        const demoMode = isDemoMode();
-        setInDemoMode(demoMode);
-
-        if (demoMode) {
-          // Use mock data if in demo mode
-          await new Promise((resolve) => setTimeout(resolve, 500)); // Simulate API delay
-          setSubscriptions(mockSubscriptions);
-          setIsConnected(false); // We're not actually connected in demo mode
-          setLoading(false);
-          setLastFetchTime(new Date()); // Set last fetch time
-          return;
-        }
-
-        // Verify connection through server API first
-        try {
-          const response = await fetch("/api/sheets-connect", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              spreadsheetId,
-              apiKey,
-              useEnvSpreadsheetId: useEnvSheet,
-              useEnvApiKey: useEnvKey,
-            }),
-          });
-
-          const result = await response.json();
-
-          if (!result.success) {
-            throw new Error(
-              result.message || "Failed to connect to Google Sheets"
-            );
-          }
-
-          // Call the Google Sheets API service
-          const data = await fetchSubscriptions(
-            useEnvSheet ? result.spreadsheetId || "" : spreadsheetId,
-            useEnvKey ? "ENV_KEY_USED" : apiKey,
-            useEnvSheet,
-            useEnvKey
-          );
-
-          setSubscriptions(data);
-          setIsConnected(true);
-          setError(null);
-          setLastFetchTime(new Date()); // Set last fetch time
-        } catch (err) {
-          console.error("Error fetching data:", err);
-          setError(
-            "Failed to fetch subscription data. Please check your connection settings."
-          );
-          setSubscriptions(mockSubscriptions); // Fallback to mock data on error
-          setIsConnected(false);
-        }
-
-        setLoading(false);
-      } catch (err) {
-        console.error("Unexpected error:", err);
-        setError("An unexpected error occurred while fetching data.");
-        setSubscriptions(mockSubscriptions); // Fallback to mock data on error
-        setIsConnected(false);
-        setLoading(false);
-      }
-    },
-    []
-  );
-
+  // Load user preferences
   useEffect(() => {
-    const initializeApp = async () => {
-      try {
-        // Load settings from local storage
-        const settings = await loadSettings();
-        setUserLocale(settings.locale);
-        setIsDarkMode(settings.isDarkMode);
-        setInDemoMode(settings.demoMode || false);
-        setCurrentSpreadsheetId(settings.spreadsheetId);
-        setCurrentApiKey(settings.apiKey);
-        setUseEnvSpreadsheetId(settings.useEnvSpreadsheetId || false);
-        setUseEnvApiKey(settings.useEnvApiKey || false);
-        setHasEnvSpreadsheetId(settings.hasEnvSpreadsheetId || false);
-        setHasEnvApiKey(settings.hasEnvApiKey || false);
+    const init = async () => {
+      const settings = await loadSettings();
+      setUserLocale(settings.locale);
+      setIsDarkMode(settings.isDarkMode);
 
-        if (typeof window !== "undefined") {
-          // Check for demo mode in URL
-          const urlParams = new URLSearchParams(window.location.search);
-          const demoParam = urlParams.get("demo");
-
-          if (demoParam === "true") {
-            // Force demo mode if specified in URL
-            setInDemoMode(true);
-            fetchFromGoogleSheets("", ""); // Empty parameters will trigger mock data
-            return;
-          }
-        }
-
-        // Check if we have connection details either through env vars or user settings
-        const connected = await checkConnection();
-        setIsConnected(connected);
-
-        // We can have a connection in 3 ways:
-        // 1. Using env variables for both spreadsheetId and apiKey
-        const usingEnvVars =
-          settings.useEnvSpreadsheetId &&
-          settings.useEnvApiKey &&
-          settings.hasEnvSpreadsheetId &&
-          settings.hasEnvApiKey;
-
-        // 2. Using user-provided settings for both
-        const usingUserSettings = settings.spreadsheetId && settings.apiKey;
-
-        // 3. A mix of env vars and user settings
-        const usingMixedSettings =
-          (settings.useEnvSpreadsheetId &&
-            settings.hasEnvSpreadsheetId &&
-            settings.apiKey) ||
-          (settings.useEnvApiKey &&
-            settings.hasEnvApiKey &&
-            settings.spreadsheetId);
-
-        if (
-          connected &&
-          (usingEnvVars || usingUserSettings || usingMixedSettings)
-        ) {
-          fetchFromGoogleSheets(
-            settings.spreadsheetId || "",
-            settings.apiKey || "",
-            settings.useEnvSpreadsheetId,
-            settings.useEnvApiKey
-          );
-        } else {
-          // Use mock data if no connection
-          setSubscriptions(mockSubscriptions);
-          setLoading(false);
-        }
-      } catch (error) {
-        console.error("Error initializing app:", error);
-        setError("Failed to initialize application settings");
-        setSubscriptions(mockSubscriptions);
-        setLoading(false);
+      if (typeof window !== "undefined") {
+        const demoParam = new URLSearchParams(window.location.search).get("demo");
+        if (demoParam === "true" || settings.demoMode) { setInDemoMode(true); }
       }
     };
+    init();
+  }, []);
 
-    initializeApp();
-  }, [fetchFromGoogleSheets]);
+  // Track last fetch time for trends display
+  useEffect(() => {
+    if (!loading) { setLastFetchTime(new Date()); }
+  }, [loading]);
 
-  const handleSaveSettings = (
-    spreadsheetId: string,
-    apiKey: string,
-    locale: string,
-    useEnvSpreadsheetId: boolean = false,
-    useEnvApiKey: boolean = false
-  ): void => {
-    // Save settings to local storage
-    saveSettingsToStorage({
-      spreadsheetId,
-      apiKey,
-      locale,
-      useEnvSpreadsheetId,
-      useEnvApiKey,
-      demoMode: false, // Turn off demo mode when saving real settings
-    });
-
-    setUserLocale(locale);
-    setUseEnvSpreadsheetId(useEnvSpreadsheetId);
-    setUseEnvApiKey(useEnvApiKey);
-    setCurrentSpreadsheetId(spreadsheetId);
-    setCurrentApiKey(apiKey);
-    setInDemoMode(false);
-
-    fetchFromGoogleSheets(
-      spreadsheetId,
-      apiKey,
-      useEnvSpreadsheetId,
-      useEnvApiKey
-    );
-    setSetupVisible(false);
-  };
-
-  const toggleDarkMode = (): void => {
+  const toggleDarkMode= (): void => {
     const newMode = !isDarkMode;
     setIsDarkMode(newMode);
     saveSettingsToStorage({ isDarkMode: newMode });
   };
 
-  const toggleDemoMode = async (): Promise<void> => {
+  const toggleDemoMode = (): void => {
     const newDemoMode = !inDemoMode;
     setInDemoMode(newDemoMode);
     saveSettingsToStorage({ demoMode: newDemoMode });
 
-    // Update URL - remove query parameter when leaving demo mode
     if (typeof window !== "undefined") {
       const url = new URL(window.location.href);
-
-      if (!newDemoMode && url.searchParams.has("demo")) {
-        // Remove the demo parameter when exiting demo mode
-        url.searchParams.delete("demo");
-        window.history.replaceState({}, "", url.toString());
-      } else if (newDemoMode && !url.searchParams.has("demo")) {
-        // Add the demo parameter when entering demo mode
-        url.searchParams.set("demo", "true");
-        window.history.replaceState({}, "", url.toString());
-      }
+      if (!newDemoMode) { url.searchParams.delete("demo"); }
+      else { url.searchParams.set("demo", "true"); }
+      window.history.replaceState({}, "", url.toString());
     }
+  };
 
-    if (newDemoMode) {
-      fetchFromGoogleSheets("", ""); // Empty parameters will trigger mock data
-    } else {
-      // Try to load real data if we have credentials
-      const settings = await loadSettings();
-      if (
-        (settings.useEnvSpreadsheetId && settings.hasEnvSpreadsheetId) ||
-        (settings.useEnvApiKey && settings.hasEnvApiKey) ||
-        settings.spreadsheetId ||
-        settings.apiKey
-      ) {
-        fetchFromGoogleSheets(
-          settings.spreadsheetId || "",
-          settings.apiKey || "",
-          settings.useEnvSpreadsheetId,
-          settings.useEnvApiKey
-        );
-      }
-    }
+  const handleSignOut = async () => {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    window.location.href = "/login";
   };
 
   // Calendar helper functions
@@ -720,11 +497,7 @@ const SubscriptionCalendar: React.FC = () => {
 
   if (loading) {
     return (
-      <div
-        className={`flex justify-center items-center h-64 ${
-          isDarkMode ? "bg-gray-900 text-white" : "bg-white text-gray-800"
-        }`}
-      >
+      <div className={`flex justify-center items-center h-64 ${isDarkMode ? "bg-gray-900 text-white" : "bg-white text-gray-800"}`}>
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
       </div>
     );
@@ -732,35 +505,16 @@ const SubscriptionCalendar: React.FC = () => {
 
   if (error) {
     return (
-      <div
-        className={`p-4 max-w-3xl mx-auto ${
-          isDarkMode ? "bg-gray-900 text-white" : "bg-white text-gray-800"
-        }`}
-      >
+      <div className={`p-4 max-w-3xl mx-auto ${isDarkMode ? "bg-gray-900 text-white" : "bg-white text-gray-800"}`}>
         <div className="bg-red-500 text-white p-4 rounded mb-4">{error}</div>
-        <button
-          onClick={() => {
-            setSetupVisible(true);
-            setError(null);
-          }}
-          className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-        >
-          Configure Google Sheets
-        </button>
-        <button onClick={toggleDemoMode} className="text-xs underline ml-4">
-          Use demo mode instead
-        </button>
+        <button onClick={toggleDemoMode} className="text-xs underline">Use demo mode instead</button>
       </div>
     );
   }
 
   return (
     <div className="flex justify-center items-start min-h-screen py-2">
-      <div
-        className={`max-w-3xl w-full mx-auto ${
-          isDarkMode ? "bg-gray-900 text-white" : "bg-white text-gray-800"
-        } rounded-lg shadow-lg relative`}
-      >
+      <div className={`max-w-3xl w-full mx-auto ${isDarkMode ? "bg-gray-900 text-white" : "bg-white text-gray-800"} rounded-lg shadow-lg relative`}>
         {selectedSubscription && (
           <SubscriptionDetail
             subscription={selectedSubscription}
@@ -769,7 +523,11 @@ const SubscriptionCalendar: React.FC = () => {
             userLocale={userLocale}
             calculateTotalSpent={calculateTotalSpent}
             positionType="click"
-            onClose={() => setSelectedSubscription(null)}
+            onClose={() => {
+              setSelectedSubscription(null);
+            }}
+            onEdit={!inDemoMode ? (sub) => { setEditingSubscription(sub); setSelectedSubscription(null); } : undefined}
+            onDelete={!inDemoMode ? async (id) => { await remove(id); setSelectedSubscription(null); } : undefined}
           />
         )}
 
@@ -784,18 +542,21 @@ const SubscriptionCalendar: React.FC = () => {
           />
         )}
 
-        {setupVisible && (
-          <SetupInstructions
+        {/* Add / Edit subscription form */}
+        {(showAddForm || editingSubscription) && (
+          <SubscriptionForm
             isDarkMode={isDarkMode}
-            userLocale={userLocale}
-            spreadsheetId={currentSpreadsheetId}
-            apiKey={currentApiKey}
-            hasEnvSpreadsheetId={hasEnvSpreadsheetId}
-            hasEnvApiKey={hasEnvApiKey}
-            useEnvSpreadsheetId={useEnvSpreadsheetId}
-            useEnvApiKey={useEnvApiKey}
-            onSaveSettings={handleSaveSettings}
-            onCancel={() => setSetupVisible(false)}
+            subscription={editingSubscription ?? undefined}
+            onSave={async (input) => {
+              if (editingSubscription) {
+                await update(editingSubscription.id, input);
+                setEditingSubscription(null);
+              } else {
+                await add(input);
+                setShowAddForm(false);
+              }
+            }}
+            onCancel={() => { setShowAddForm(false); setEditingSubscription(null); }}
           />
         )}
 
@@ -839,102 +600,68 @@ const SubscriptionCalendar: React.FC = () => {
                 &gt;
               </button>
               <h1 className="text-xl sm:text-2xl font-bold">
-                {getMonthName(currentDate.getMonth())}{" "}
-                {currentDate.getFullYear()}
+                {getMonthName(currentDate.getMonth())}{" "}{currentDate.getFullYear()}
               </h1>
             </div>
 
-            <div className="flex items-center w-full sm:w-auto justify-between sm:justify-normal">
+            <div className="flex items-center w-full sm:w-auto justify-between sm:justify-normal gap-1">
               <div
                 className="text-right cursor-pointer group relative"
                 onClick={() => setShowSpendingChart(true)}
-                onMouseEnter={() =>
-                  window.innerWidth > 768 && setShowSpendingChart(true)
-                }
+                onMouseEnter={() => window.innerWidth > 768 && setShowSpendingChart(true)}
               >
-                <div className="text-xs sm:text-sm text-gray-400">
-                  Monthly spend
-                </div>
+                <div className="text-xs sm:text-sm text-gray-400">Monthly spend</div>
                 <div className="text-lg sm:text-2xl font-bold group-hover:text-blue-500 transition-colors">
                   {calculateMonthlyTotal()}
-                  <div className="hidden group-hover:inline-block ml-2 text-xs">
-                    📊
-                  </div>
+                  <span className="hidden group-hover:inline-block ml-2 text-xs">📊</span>
                 </div>
               </div>
 
-              <div className="flex">
+              <div className="flex items-center ml-2 gap-1">
+                {!inDemoMode && (
+                  <button
+                    onClick={() => setShowAddForm(true)}
+                    className="p-2 rounded-full bg-blue-600 text-white hover:bg-blue-500 transition-colors"
+                    aria-label="Add subscription"
+                    title="Add subscription"
+                  >
+                    ＋
+                  </button>
+                )}
                 <button
                   onClick={toggleDarkMode}
-                  className="ml-4 p-2 rounded-full hover:bg-gray-700 transition-colors"
-                  aria-label={
-                    isDarkMode ? "Switch to light mode" : "Switch to dark mode"
-                  }
+                  className="p-2 rounded-full hover:bg-gray-700 transition-colors"
+                  aria-label={isDarkMode ? "Switch to light mode" : "Switch to dark mode"}
                 >
                   {isDarkMode ? "☀️" : "🌙"}
                 </button>
                 <button
-                  onClick={() => setSetupVisible(!setupVisible)}
-                  className="ml-2 p-2 rounded-full hover:bg-gray-700 transition-colors"
-                  aria-label="Settings"
+                  onClick={toggleDemoMode}
+                  className="p-2 rounded-full hover:bg-gray-700 transition-colors text-xs"
+                  aria-label={inDemoMode ? "Exit demo mode" : "Enter demo mode"}
+                  title={inDemoMode ? "Exit demo mode" : "Demo mode"}
                 >
-                  ⚙️
+                  {inDemoMode ? "🔴" : "🔍"}
                 </button>
+                {!inDemoMode && (
+                  <button
+                    onClick={handleSignOut}
+                    className="p-2 rounded-full hover:bg-gray-700 transition-colors text-xs text-gray-400"
+                    aria-label="Sign out"
+                    title="Sign out"
+                  >
+                    ↩
+                  </button>
+                )}
               </div>
             </div>
           </div>
 
-          {isConnected && (
-            <div className="mb-4 p-2 bg-green-800 bg-opacity-20 border border-green-600 rounded-md text-green-400 flex flex-wrap items-center">
-              <span className="mr-2">✓</span>
-              <span className="text-xs sm:text-sm">
-                Connected to Google Sheets
-              </span>
-              <button
-                onClick={() => setSetupVisible(true)}
-                className="ml-auto text-xs underline"
-              >
-                Change settings
-              </button>
-            </div>
-          )}
-
           {inDemoMode && (
             <div className="mb-4 p-2 bg-purple-800 bg-opacity-20 border border-purple-600 rounded-md text-purple-400 flex flex-wrap items-center">
               <span className="mr-2">🔍</span>
-              <span>Running in demo mode with sample data</span>
-              <div className="ml-auto flex flex-wrap mt-1 sm:mt-0">
-                <button
-                  onClick={() => setSetupVisible(true)}
-                  className="text-xs underline mr-3"
-                >
-                  Connect to real data
-                </button>
-                <button onClick={toggleDemoMode} className="text-xs underline">
-                  Exit demo
-                </button>
-              </div>
-            </div>
-          )}
-
-          {!isConnected && !inDemoMode && !setupVisible && (
-            <div className="mb-4 p-2 bg-blue-800 bg-opacity-20 border border-blue-600 rounded-md text-blue-400 flex flex-wrap items-center">
-              <span className="mr-2">ℹ️</span>
-              <span>
-                Using sample data. Connect to Google Sheets for your own
-                subscriptions.
-              </span>
-              <div className="ml-auto flex flex-wrap mt-1 sm:mt-0">
-                <button
-                  onClick={() => setSetupVisible(true)}
-                  className="text-xs underline mr-3"
-                >
-                  Setup connection
-                </button>
-                <button onClick={toggleDemoMode} className="text-xs underline">
-                  Use demo mode
-                </button>
-              </div>
+              <span className="text-sm">Demo mode — sample data only</span>
+              <button onClick={toggleDemoMode} className="text-xs underline ml-auto">Exit demo</button>
             </div>
           )}
 
@@ -996,7 +723,6 @@ const SubscriptionCalendar: React.FC = () => {
                         handleSubscriptionLeave={handleSubscriptionLeave}
                         handleSubscriptionClick={handleSubscriptionClick}
                         toggleDayExpansion={toggleDayExpansion}
-                        isDarkMode={isDarkMode}
                       />
                     )}
                   </div>
