@@ -35,7 +35,10 @@ export async function updateSession(request: NextRequest) {
     pathname.startsWith("/unauthorized") ||
     pathname.startsWith("/auth/");
 
-  if (!user && !isPublicPath) {
+  // Allow unauthenticated access when demo mode is explicitly requested
+  const isDemoMode = request.nextUrl.searchParams.get("demo") === "true";
+
+  if (!user && !isPublicPath && !isDemoMode) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     return NextResponse.redirect(url);
