@@ -48,6 +48,16 @@ export default function LoginPage() {
           Continue with Google
         </button>
 
+        <div className="w-full border-t border-gray-800 pt-4 flex flex-col items-center gap-2">
+          <p className="text-gray-500 text-xs">No account? Explore with sample data.</p>
+          <a
+            href="/?demo=true"
+            className="w-full text-center py-2 px-4 rounded-lg border border-gray-700 text-gray-400 hover:text-white hover:border-gray-500 transition-colors text-sm"
+          >
+            Try Demo
+          </a>
+        </div>
+
         <p className="text-gray-600 text-xs text-center">
           Access is limited to invited users only.
         </p>

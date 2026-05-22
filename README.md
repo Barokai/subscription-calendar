@@ -68,7 +68,66 @@ Open [http://localhost:3000](http://localhost:3000).
 
 > The dev server tries HTTPS first (`--experimental-https`). If it fails, run `mkcert -install` in an admin PowerShell session and try again, or just use plain HTTP.
 
+### 4. Demo mode (no login required)
+
+You can explore the app with sample data without any Supabase or Google setup:
+
+```
+http://localhost:3000/?demo=true
+```
+
+Or click **Try Demo** on the login page. Demo mode uses mock subscription data and disables all write operations.
+
 ---
+
+## Local development with Google OAuth
+
+To test the real Google login flow locally you have two options.
+
+### Option A — Supabase CLI (recommended)
+
+Follow the [Supabase local dev guide](https://supabase.com/docs/guides/auth/social-login/auth-google#local-development):
+
+1. Install the [Supabase CLI](https://supabase.com/docs/guides/cli) and run:
+   ```bash
+   supabase start
+   ```
+2. Create (or edit) `supabase/config.toml`:
+   ```toml
+   [auth.external.google]
+   enabled = true
+   client_id = "<your-google-client-id>"
+   secret = "env(SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_SECRET)"
+   ```
+3. Add the secret to your environment:
+   ```bash
+   export SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_SECRET="<client-secret>"
+   ```
+4. In your `.env.local`, point at the local Supabase instance:
+   ```env
+   NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=<local-anon-key from `supabase status`>
+   ```
+5. In **Google Cloud Console → OAuth Client**:
+   - **Authorized JavaScript origins**: add `http://localhost:3000`
+   - **Authorized redirect URIs**: add `http://127.0.0.1:54321/auth/v1/callback`
+
+### Option B — Cloud Supabase project with localhost redirect
+
+If you want to skip the CLI and use your cloud Supabase project directly:
+
+1. In **Supabase → Authentication → URL Configuration → Redirect URLs**, add:
+   ```
+   http://localhost:3000/auth/callback
+   ```
+2. In **Google Cloud Console → OAuth Client → Authorized JavaScript origins**, add:
+   ```
+   http://localhost:3000
+   ```
+   *(No extra redirect URI needed — Supabase's cloud callback is already registered)*
+3. Your `.env.local` stays pointing at the cloud project as normal.
+
+> Remember to remove `http://localhost` entries when going to production or restrict them to dev-only OAuth clients.
 
 ## Supabase setup
 
