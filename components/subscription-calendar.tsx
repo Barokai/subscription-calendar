@@ -11,7 +11,7 @@ import {
   saveSettings as saveSettingsToStorage,
 } from "./settings-service";
 import { Subscription } from "@/lib/subscriptions";
-import { isPaymentInMonth } from "./google-sheets-service";
+import { isPaymentInMonth } from "@/lib/frequency-utils";
 import { mockSubscriptions } from "../data/mock-subscriptions";
 import {
   parseDate,

@@ -1,4 +1,10 @@
-import * as simpleIcons from "simple-icons";
+// Access icons by key at runtime to avoid pulling the entire simple-icons
+// namespace into the bundle as a static import.
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const simpleIconsModule = require("simple-icons") as Record<
+  string,
+  { svg: string; hex: string; title: string } | undefined
+>;
 
 export interface IconResult {
   svg: string;
@@ -74,7 +80,7 @@ export function getServiceIcon(name: string): IconResult | null {
 
   for (const attempt of attempts) {
     const key = toSimpleIconsKey(attempt);
-    const icon = (simpleIcons as Record<string, { svg: string; hex: string; title: string } | undefined>)[key];
+    const icon = simpleIconsModule[key];
     if (icon) {
       return { svg: icon.svg, hex: icon.hex, title: icon.title };
     }

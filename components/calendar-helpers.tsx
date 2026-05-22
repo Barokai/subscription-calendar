@@ -1,6 +1,6 @@
 import React from "react";
 import { Subscription } from "@/lib/subscriptions";
-import { isPaymentInMonth } from "./google-sheets-service";
+import { isPaymentInMonth } from "@/lib/frequency-utils";
 import styles from "../styles/calendar.module.css";
 import { parseDate } from "./date-utils";
 import { renderSubscriptionIcon } from "./icon-utils";
