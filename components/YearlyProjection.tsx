@@ -4,6 +4,7 @@ import React, { useMemo } from "react";
 import { Subscription } from "@/lib/subscriptions";
 import { isPaymentInMonth } from "@/lib/frequency-utils";
 import { parseDate } from "./date-utils";
+import { useI18n } from "@/lib/i18n";
 
 interface YearlyProjectionProps {
   subscriptions: Subscription[];
@@ -35,6 +36,7 @@ const YearlyProjection: React.FC<YearlyProjectionProps> = ({
   userLocale,
   isDarkMode,
 }) => {
+  const { t, tpl } = useI18n();
   const currency = subscriptions.length > 0
     ? subscriptions[0].currency.replace("€", "EUR")
     : "EUR";
@@ -108,13 +110,13 @@ const YearlyProjection: React.FC<YearlyProjectionProps> = ({
   return (
     <div className={`mt-6 rounded-lg overflow-hidden border ${border} ${bg}`}>
       <h2 className={`text-lg font-semibold p-4 ${cardBg} ${text}`}>
-        Yearly Projection &amp; Insights
+        {t.yearlyProjection.title}
       </h2>
 
       {/* ── 12-month bar chart ── */}
       <div className="p-4">
         <p className={`text-xs uppercase tracking-wider mb-3 ${muted}`}>
-          Next 12 months · projected total {fmt(projectedAnnual)}
+          {tpl(t.yearlyProjection.next12MonthsLabel, { total: fmt(projectedAnnual) })}
         </p>
         <div className="flex items-end gap-1 h-20">
           {monthlyProjection.map((m, i) => {
@@ -142,7 +144,7 @@ const YearlyProjection: React.FC<YearlyProjectionProps> = ({
       {/* ── Savings insights ── */}
       {duplicateCategories.length > 0 && (
         <div className="px-4 pb-4 space-y-2">
-          <p className={`text-xs uppercase tracking-wider ${muted}`}>Savings insights</p>
+          <p className={`text-xs uppercase tracking-wider ${muted}`}>{t.yearlyProjection.savingsInsights}</p>
           {duplicateCategories.map(([cat, subs]) => {
             const catAnnual = subs.reduce((s, sub) => s + annualCost(sub), 0);
             const cheapest = [...subs].sort((a, b) => annualCost(a) - annualCost(b))[0];
@@ -155,10 +157,10 @@ const YearlyProjection: React.FC<YearlyProjectionProps> = ({
                 <span className="text-yellow-400 mt-0.5">⚠</span>
                 <div>
                   <p className={`text-sm font-medium ${subtext}`}>
-                    {subs.length} {cat} subscriptions — you could save {fmt(saveable)}/yr
+                    {tpl(t.yearlyProjection.savingsMessage, { count: subs.length, category: cat, amount: fmt(saveable) })}
                   </p>
                   <p className={`text-xs ${muted}`}>
-                    {subs.map((s) => `${s.name} (${fmtExact(s.amount)}/${s.frequency})`).join(" · ")}
+                    {subs.map((s) => tpl(t.yearlyProjection.savingsDetail, { name: s.name, amount: fmtExact(s.amount), frequency: s.frequency })).join(" · ")}
                   </p>
                 </div>
               </div>
@@ -169,7 +171,7 @@ const YearlyProjection: React.FC<YearlyProjectionProps> = ({
 
       {/* ── Per-subscription annual breakdown ── */}
       <div className="px-4 pb-4">
-        <p className={`text-xs uppercase tracking-wider mb-2 ${muted}`}>Annual cost breakdown</p>
+        <p className={`text-xs uppercase tracking-wider mb-2 ${muted}`}>{t.yearlyProjection.annualCostBreakdown}</p>
         <div className="space-y-1">
           {breakdown.map((sub) => {
             const yearly = annualCost(sub);
@@ -178,9 +180,9 @@ const YearlyProjection: React.FC<YearlyProjectionProps> = ({
               <div key={sub.id} className="flex items-center gap-2">
                 <span className={`text-sm flex-1 truncate ${subtext}`}>{sub.name}</span>
                 <span className={`text-xs ${muted} w-20 text-right`}>
-                  {sub.frequency !== "yearly" ? `${fmtExact(sub.amount)}/${sub.frequency}` : ""}
+                  {sub.frequency !== "yearly" ? tpl(t.yearlyProjection.costPerFrequency, { amount: fmtExact(sub.amount), frequency: sub.frequency }) : ""}
                 </span>
-                <span className={`text-sm font-medium w-20 text-right ${text}`}>{fmt(yearly)}/yr</span>
+                <span className={`text-sm font-medium w-20 text-right ${text}`}>{tpl(t.yearlyProjection.costPerYear, { amount: fmt(yearly) })}</span>
                 <div className={`w-16 h-1.5 rounded-full overflow-hidden ${isDarkMode ? "bg-gray-700" : "bg-gray-200"}`}>
                   <div className="h-full bg-blue-500 rounded-full" style={{ width: `${pct}%` }} />
                 </div>

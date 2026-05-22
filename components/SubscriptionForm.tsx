@@ -3,30 +3,9 @@
 import React, { useState } from "react";
 import { Subscription, SubscriptionInput } from "@/lib/subscriptions";
 import { renderSubscriptionIcon } from "./icon-utils";
+import { useI18n } from "@/lib/i18n";
 
 const CURRENCIES = ["EUR", "USD", "GBP", "CHF", "JPY", "CAD", "AUD"];
-const FREQUENCIES = [
-  { value: "monthly", label: "Monthly" },
-  { value: "yearly", label: "Yearly" },
-  { value: "quarterly", label: "Quarterly" },
-  { value: "biannually", label: "Bi-annually" },
-  { value: "weekly", label: "Weekly" },
-];
-const CATEGORIES = [
-  "Entertainment",
-  "Music",
-  "Productivity",
-  "Storage",
-  "Gaming",
-  "News & Media",
-  "Health & Fitness",
-  "Finance",
-  "Education",
-  "Shopping",
-  "Utilities",
-  "Software",
-  "Other",
-];
 
 interface SubscriptionFormProps {
   isDarkMode: boolean;
@@ -41,7 +20,31 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({
   onSave,
   onCancel,
 }) => {
+  const { t } = useI18n();
   const isEdit = !!subscription;
+
+  const FREQUENCIES = [
+    { value: "monthly", label: t.subscriptionForm.frequencyMonthly },
+    { value: "yearly", label: t.subscriptionForm.frequencyYearly },
+    { value: "quarterly", label: t.subscriptionForm.frequencyQuarterly },
+    { value: "biannually", label: t.subscriptionForm.frequencyBiannually },
+    { value: "weekly", label: t.subscriptionForm.frequencyWeekly },
+  ];
+  const CATEGORIES = [
+    t.subscriptionForm.categoryEntertainment,
+    t.subscriptionForm.categoryMusic,
+    t.subscriptionForm.categoryProductivity,
+    t.subscriptionForm.categoryStorage,
+    t.subscriptionForm.categoryGaming,
+    t.subscriptionForm.categoryNewsMedia,
+    t.subscriptionForm.categoryHealthFitness,
+    t.subscriptionForm.categoryFinance,
+    t.subscriptionForm.categoryEducation,
+    t.subscriptionForm.categoryShopping,
+    t.subscriptionForm.categoryUtilities,
+    t.subscriptionForm.categorySoftware,
+    t.subscriptionForm.categoryOther,
+  ];
 
   const [name, setName] = useState(subscription?.name ?? "");
   const [amount, setAmount] = useState(subscription?.amount?.toString() ?? "");
@@ -64,10 +67,10 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({
     setError(null);
 
     const parsedAmount = parseFloat(amount);
-    if (!name.trim()) { setError("Name is required"); return; }
-    if (isNaN(parsedAmount) || parsedAmount <= 0) { setError("Enter a valid positive amount"); return; }
+    if (!name.trim()) { setError(t.subscriptionForm.errorNameRequired); return; }
+    if (isNaN(parsedAmount) || parsedAmount <= 0) { setError(t.subscriptionForm.errorInvalidAmount); return; }
     const parsedDay = parseInt(dayOfMonth);
-    if (isNaN(parsedDay) || parsedDay < 1 || parsedDay > 31) { setError("Day must be 1–31"); return; }
+    if (isNaN(parsedDay) || parsedDay < 1 || parsedDay > 31) { setError(t.subscriptionForm.errorInvalidDay); return; }
 
     setSaving(true);
     try {
@@ -83,7 +86,7 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({
         color: color || null,
       });
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to save");
+      setError(err instanceof Error ? err.message : t.subscriptionForm.errorSaveFailed);
       setSaving(false);
     }
   };
@@ -101,19 +104,19 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({
               {renderSubscriptionIcon(name, color || null, "w-full h-full")}
             </div>
           )}
-          <h2 className="text-lg font-bold flex-1">{isEdit ? "Edit Subscription" : "Add Subscription"}</h2>
-          <button type="button" aria-label="Close" onClick={onCancel} className="text-gray-400 hover:text-gray-200 ml-2">✕</button>
+          <h2 className="text-lg font-bold flex-1">{isEdit ? t.subscriptionForm.editTitle : t.subscriptionForm.addTitle}</h2>
+          <button type="button" aria-label={t.subscriptionForm.closeButton} onClick={onCancel} className="text-gray-400 hover:text-gray-200 ml-2">✕</button>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-3">
           {/* Name */}
           <div>
-            <label className={labelCls}>Name *</label>
+            <label className={labelCls}>{t.subscriptionForm.nameLabel}</label>
             <input
               className={inputCls}
               value={name}
               onChange={e => setName(e.target.value)}
-              placeholder="Netflix, Spotify…"
+              placeholder={t.subscriptionForm.namePlaceholder}
               autoFocus
             />
           </div>
@@ -129,11 +132,11 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({
                 min="0"
                 value={amount}
                 onChange={e => setAmount(e.target.value)}
-                placeholder="9.99"
+                placeholder={t.subscriptionForm.amountPlaceholder}
               />
             </div>
             <div className="w-24">
-              <label className={labelCls}>Currency</label>
+              <label className={labelCls}>{t.subscriptionForm.currencyLabel}</label>
               <select className={inputCls} value={currency} onChange={e => setCurrency(e.target.value)}>
                 {CURRENCIES.map(c => <option key={c} value={c}>{c}</option>)}
               </select>
@@ -143,13 +146,13 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({
           {/* Frequency + Day */}
           <div className="flex gap-2">
             <div className="flex-1">
-              <label className={labelCls}>Billing frequency</label>
+              <label className={labelCls}>{t.subscriptionForm.frequencyLabel}</label>
               <select className={inputCls} value={frequency} onChange={e => setFrequency(e.target.value)}>
                 {FREQUENCIES.map(f => <option key={f.value} value={f.value}>{f.label}</option>)}
               </select>
             </div>
             <div className="w-24">
-              <label className={labelCls}>Day of month</label>
+              <label className={labelCls}>{t.subscriptionForm.dayOfMonthLabel}</label>
               <input
                 className={inputCls}
                 type="number"
@@ -163,22 +166,22 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({
 
           {/* Category */}
           <div>
-            <label className={labelCls}>Category</label>
+            <label className={labelCls}>{t.subscriptionForm.categoryLabel}</label>
             <select
               className={inputCls}
               value={isCustomCategory ? "__custom__" : category}
               onChange={e => setCategory(e.target.value)}
             >
-              <option value="">— None —</option>
+              <option value="">{t.subscriptionForm.categoryPlaceholder}</option>
               {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
-              <option value="__custom__">Custom…</option>
+              <option value="__custom__">{t.subscriptionForm.customCategoryOption}</option>
             </select>
             {isCustomCategory && (
               <input
                 className={`${inputCls} mt-1`}
                 value={customCategory}
                 onChange={e => setCustomCategory(e.target.value)}
-                placeholder="Enter category name"
+                placeholder={t.subscriptionForm.customCategoryPlaceholder}
                 autoFocus
               />
             )}
@@ -187,24 +190,24 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({
           {/* Start + End date */}
           <div className="flex gap-2">
             <div className="flex-1">
-              <label className={labelCls}>Start date *</label>
+              <label className={labelCls}>{t.subscriptionForm.startDateLabel}</label>
               <input className={inputCls} type="date" value={startDate} onChange={e => setStartDate(e.target.value)} />
             </div>
             <div className="flex-1">
-              <label className={labelCls}>End date (optional)</label>
+              <label className={labelCls}>{t.subscriptionForm.endDateLabel}</label>
               <input className={inputCls} type="date" value={endDate} onChange={e => setEndDate(e.target.value)} />
             </div>
           </div>
 
           {/* Color override */}
           <div>
-            <label className={labelCls}>Brand color override (optional)</label>
+            <label className={labelCls}>{t.subscriptionForm.colorLabel}</label>
             <div className="flex gap-2 items-center">
               <input
                 className={`${inputCls} flex-1`}
                 value={color}
                 onChange={e => setColor(e.target.value.replace(/[^0-9a-fA-F]/g, "").slice(0, 6))}
-                placeholder="hex without # e.g. E50914"
+                placeholder={t.subscriptionForm.colorPlaceholder}
                 maxLength={6}
               />
               {color && (
@@ -221,14 +224,14 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({
               onClick={onCancel}
               className="flex-1 py-2 rounded-md text-sm border border-gray-600 hover:bg-gray-700 transition-colors"
             >
-              Cancel
+              {t.subscriptionForm.cancelButton}
             </button>
             <button
               type="submit"
               disabled={saving}
               className="flex-1 py-2 rounded-md text-sm bg-blue-600 hover:bg-blue-500 text-white font-medium transition-colors disabled:opacity-50"
             >
-              {saving ? "Saving…" : isEdit ? "Save changes" : "Add subscription"}
+              {saving ? t.subscriptionForm.savingLabel : isEdit ? t.subscriptionForm.saveButton : t.subscriptionForm.addButton}
             </button>
           </div>
         </form>

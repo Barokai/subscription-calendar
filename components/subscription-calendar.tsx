@@ -12,7 +12,7 @@ import {
 } from "./settings-service";
 import { Subscription } from "@/lib/subscriptions";
 import { isPaymentInMonth } from "@/lib/frequency-utils";
-import { mockSubscriptions } from "../data/mock-subscriptions";
+import { mockSubscriptions, mockIncomes } from "../data/mock-subscriptions";
 import {
   parseDate,
   getFirstDayOfWeek,
@@ -27,9 +27,14 @@ import { getSubscriptionsForDay, SubscriptionIcons } from "./calendar-helpers";
 import styles from "../styles/calendar.module.css";
 import SpendingChart from "./spending-chart";
 import { useSubscriptions } from "@/hooks/useSubscriptions";
+import { useIncomes } from "@/hooks/useIncomes";
 import SubscriptionForm from "./SubscriptionForm";
 import ImportModal from "./ImportModal";
+import IncomeManager from "./IncomeManager";
+import CashFlowProjection from "./CashFlowProjection";
 import { createClient } from "@/lib/supabase/client";
+import { useI18n } from "@/lib/i18n";
+import LanguageSwitcher from "./LanguageSwitcher";
 
 interface CalendarDayObject {
   day: number;
@@ -42,9 +47,9 @@ interface CalendarDayObject {
 }
 
 const SubscriptionCalendar: React.FC = () => {
+  const { t, userLocale } = useI18n();
   const [currentDate, setCurrentDate] = useState<Date>(new Date());
   const [isDarkMode, setIsDarkMode] = useState<boolean>(true);
-  const [userLocale, setUserLocale] = useState<string>("de-AT");
   const [inDemoMode, setInDemoMode] = useState<boolean>(false);
   const [hoverPosition, setHoverPosition] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [hoveredSubscription, setHoveredSubscription] = useState<Subscription | null>(null);
@@ -62,12 +67,12 @@ const SubscriptionCalendar: React.FC = () => {
   const [lastFetchTime, setLastFetchTime] = useState<Date | undefined>(undefined);
 
   const { subscriptions, loading, error, add, update, remove } = useSubscriptions(inDemoMode, mockSubscriptions);
+  const { incomes, add: addIncome, update: updateIncome, remove: removeIncome } = useIncomes(inDemoMode, mockIncomes);
 
   // Load user preferences
   useEffect(() => {
     const init = async () => {
       const settings = await loadSettings();
-      setUserLocale(settings.locale);
       setIsDarkMode(settings.isDarkMode);
 
       if (typeof window !== "undefined") {
@@ -510,7 +515,7 @@ const SubscriptionCalendar: React.FC = () => {
     return (
       <div className={`p-4 max-w-3xl mx-auto ${isDarkMode ? "bg-gray-900 text-white" : "bg-white text-gray-800"}`}>
         <div className="bg-red-500 text-white p-4 rounded mb-4">{error}</div>
-        <button onClick={toggleDemoMode} className="text-xs underline">Use demo mode instead</button>
+        <button onClick={toggleDemoMode} className="text-xs underline">{t.calendar.errorWithDemoFallback}</button>
       </div>
     );
   }
@@ -627,7 +632,7 @@ const SubscriptionCalendar: React.FC = () => {
                 onClick={() => setShowSpendingChart(true)}
                 onMouseEnter={() => window.innerWidth > 768 && setShowSpendingChart(true)}
               >
-                <div className="text-xs sm:text-sm text-gray-400">Monthly spend</div>
+                <div className="text-xs sm:text-sm text-gray-400">{t.nav.monthlySpend}</div>
                 <div className="text-lg sm:text-2xl font-bold group-hover:text-blue-500 transition-colors">
                   {calculateMonthlyTotal()}
                   <span className="hidden group-hover:inline-block ml-2 text-xs">📊</span>
@@ -640,16 +645,16 @@ const SubscriptionCalendar: React.FC = () => {
                     <button
                       onClick={() => setShowAddForm(true)}
                       className="p-2 rounded-full bg-blue-600 text-white hover:bg-blue-500 transition-colors"
-                      aria-label="Add subscription"
-                      title="Add subscription"
+                      aria-label={t.nav.addSubscriptionButton}
+                      title={t.nav.addSubscriptionButton}
                     >
                       ＋
                     </button>
                     <button
                       onClick={() => setShowImport(true)}
                       className="p-2 rounded-full bg-gray-700 text-white hover:bg-gray-600 transition-colors text-sm"
-                      aria-label="Import from CSV"
-                      title="Import from CSV"
+                      aria-label={t.nav.importFromCsv}
+                      title={t.nav.importFromCsv}
                     >
                       ↑
                     </button>
@@ -658,15 +663,15 @@ const SubscriptionCalendar: React.FC = () => {
                 <button
                   onClick={toggleDarkMode}
                   className="p-2 rounded-full hover:bg-gray-700 transition-colors"
-                  aria-label={isDarkMode ? "Switch to light mode" : "Switch to dark mode"}
+                  aria-label={isDarkMode ? t.nav.switchToLightMode : t.nav.switchToDarkMode}
                 >
                   {isDarkMode ? "☀️" : "🌙"}
                 </button>
                 <button
                   onClick={toggleDemoMode}
                   className="p-2 rounded-full hover:bg-gray-700 transition-colors text-xs"
-                  aria-label={inDemoMode ? "Exit demo mode" : "Enter demo mode"}
-                  title={inDemoMode ? "Exit demo mode" : "Demo mode"}
+                  aria-label={inDemoMode ? t.nav.exitDemoMode : t.nav.enterDemoMode}
+                  title={inDemoMode ? t.nav.exitDemoMode : t.nav.demoMode}
                 >
                   {inDemoMode ? "🔴" : "🔍"}
                 </button>
@@ -674,12 +679,13 @@ const SubscriptionCalendar: React.FC = () => {
                   <button
                     onClick={handleSignOut}
                     className="p-2 rounded-full hover:bg-gray-700 transition-colors text-xs text-gray-400"
-                    aria-label="Sign out"
-                    title="Sign out"
+                    aria-label={t.nav.signOut}
+                    title={t.nav.signOut}
                   >
                     ↩
                   </button>
                 )}
+                <LanguageSwitcher isDarkMode={isDarkMode} />
               </div>
             </div>
           </div>
@@ -687,8 +693,8 @@ const SubscriptionCalendar: React.FC = () => {
           {inDemoMode && (
             <div className="mb-4 p-2 bg-purple-800 bg-opacity-20 border border-purple-600 rounded-md text-purple-400 flex flex-wrap items-center">
               <span className="mr-2">🔍</span>
-              <span className="text-sm">Demo mode — sample data only</span>
-              <button onClick={toggleDemoMode} className="text-xs underline ml-auto">Exit demo</button>
+              <span className="text-sm">{t.nav.demoModeActive}</span>
+              <button onClick={toggleDemoMode} className="text-xs underline ml-auto">{t.nav.exitDemoLink}</button>
             </div>
           )}
 
@@ -788,6 +794,24 @@ const SubscriptionCalendar: React.FC = () => {
             subscriptions={subscriptions}
             userLocale={userLocale}
             isDarkMode={isDarkMode}
+          />
+
+          {/* Income Sources */}
+          <IncomeManager
+            incomes={incomes}
+            isDarkMode={isDarkMode}
+            userLocale={userLocale}
+            onAdd={addIncome}
+            onUpdate={updateIncome}
+            onRemove={removeIncome}
+          />
+
+          {/* Cash Flow Projection */}
+          <CashFlowProjection
+            subscriptions={subscriptions}
+            incomes={incomes}
+            isDarkMode={isDarkMode}
+            userLocale={userLocale}
           />
         </div>
       </div>

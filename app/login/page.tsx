@@ -1,8 +1,12 @@
 "use client";
 
 import { createClient } from "@/lib/supabase/client";
+import { useI18n } from "@/lib/i18n";
+import LanguageSwitcher from "@/components/LanguageSwitcher";
 
 export default function LoginPage() {
+  const { t } = useI18n();
+
   const signInWithGoogle = async () => {
     const supabase = createClient();
     await supabase.auth.signInWithOAuth({
@@ -17,10 +21,8 @@ export default function LoginPage() {
     <main className="min-h-screen flex items-center justify-center bg-gray-950">
       <div className="bg-gray-900 rounded-2xl p-10 flex flex-col items-center gap-6 shadow-xl w-full max-w-sm">
         <div className="flex flex-col items-center gap-2">
-          <h1 className="text-2xl font-bold text-white">Subscription Calendar</h1>
-          <p className="text-gray-400 text-sm text-center">
-            Track and manage all your recurring subscriptions in one place.
-          </p>
+          <h1 className="text-2xl font-bold text-white">{t.login.heading}</h1>
+          <p className="text-gray-400 text-sm text-center">{t.login.subtitle}</p>
         </div>
 
         <button
@@ -45,22 +47,22 @@ export default function LoginPage() {
               fill="#EA4335"
             />
           </svg>
-          Continue with Google
+          {t.login.signInButton}
         </button>
 
         <div className="w-full border-t border-gray-800 pt-4 flex flex-col items-center gap-2">
-          <p className="text-gray-500 text-xs">No account? Explore with sample data.</p>
+          <p className="text-gray-500 text-xs">{t.login.noAccount}</p>
           <a
             href="/?demo=true"
             className="w-full text-center py-2 px-4 rounded-lg border border-gray-700 text-gray-400 hover:text-white hover:border-gray-500 transition-colors text-sm"
           >
-            Try Demo
+            {t.login.demoButton}
           </a>
         </div>
 
-        <p className="text-gray-600 text-xs text-center">
-          Access is limited to invited users only.
-        </p>
+        <p className="text-gray-600 text-xs text-center">{t.login.accessLimited}</p>
+
+        <LanguageSwitcher isDarkMode={true} />
       </div>
     </main>
   );
