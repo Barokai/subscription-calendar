@@ -16,6 +16,9 @@ create table if not exists public.subscriptions (
   updated_at   timestamptz not null default now()
 );
 
+-- Grant access to authenticated users (required alongside RLS)
+grant select, insert, update, delete on public.subscriptions to authenticated;
+
 -- Row Level Security: every user sees only their own rows
 alter table public.subscriptions enable row level security;
 

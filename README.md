@@ -1,126 +1,139 @@
 # Subscription Calendar
 
-A visual calendar application that helps you track and manage your recurring subscriptions.
+A visual calendar app to track and manage all your recurring subscriptions in one place.
 
 > [!NOTE]
 > **Inspiration/Acknowledgement**
-> 
+>
 > Inspired by a component created by [LN dev](https://github.com/ln-dev7): <https://ui.lndev.me/components/subscriptions-calendar>
 
 ## Features
 
-- Monthly calendar view of subscription payments
-- Integration with Google Sheets to store your subscription data
-- Dark/light mode toggle
-- Detailed view of each subscription
-- Localization support (minimal)
-- Monthly spending summary
+- Monthly calendar view of all upcoming payments
+- Add, edit and delete subscriptions in-app (no spreadsheet needed)
+- Brand icons auto-resolved via [simple-icons](https://simpleicons.org/) with initials fallback
+- Category grouping (Entertainment, Music, Productivity, …)
+- Monthly spending summary & pie chart
+- Dark/light mode, locale support
+- Google OAuth login — access restricted to an invite-only email allowlist
+- Demo mode for exploring without an account
 
-## Getting Started
+## Tech stack
+
+- [Next.js 16](https://nextjs.org/) / React / TypeScript
+- [Tailwind CSS](https://tailwindcss.com/)
+- [Supabase](https://supabase.com/) — Postgres database + Google OAuth
+- [simple-icons](https://simpleicons.org/) — brand icon library
+- [bun](https://bun.sh/) — package manager / runtime
+
+---
+
+## Local development
 
 ### Prerequisites
 
-- [bun](https://bun.sh/) - Install on Windows (run PowerShell in terminal or in VS Code):
+- [bun](https://bun.sh/) (Windows: `irm bun.sh/install.ps1 | iex`)
+- A [Supabase](https://supabase.com/) project (free tier is fine)
+- A Google Cloud project with OAuth credentials (see below)
+
+### 1. Clone & install
 
 ```bash
-irm bun.sh/install.ps1 | iex
-```
-
-### Development
-
-1. Clone the repository
-
-```bash
-git clone https://github.com/yourusername/subscription-calendar.git
+git clone https://github.com/Barokai/subscription-calendar.git
 cd subscription-calendar
-```
-
-2. Install dependencies
-
-```bash
-# Install dependencies
 bun install
 ```
 
-3. Run the development server
+### 2. Environment variables
 
-```bash
-# Start development server
-bun run dev
-```
-
-This tries to use run `next dev` with the `--experimental-https` flag. If you encounter issues, you may need to run the following command before, and try again (or just continue without HTTPS):
-
-```bash
-# Grab the path to mkcert from the error message
-# ⨯ Failed to generate self-signed certificate. Falling back to http. Error: Command failed: "C:\Users\<yourusername>\AppData\Local\mkcert\mkcert-vx.x.x-windows-amd64.exe" -install"
-
-# open powershell as admin, navigate to the path, and run the command
-mkcert -install
-```
-
-4. Open [https://localhost](https://localhost:3000) (or [http://localhost:3000](https://localhost:3000)) in your browser to see the application
-
-## Google Sheets Integration
-
-You can connect to Google Sheets in two ways:
-
-### 1. Environment Variables (Recommended for Production)
-
-Set up environment variables for secure, server-side configuration:
-
-1. Copy `.env.example` to `.env.local`:
+Copy the example and fill in your values:
 
 ```bash
 cp .env.example .env.local
 ```
 
-2. Fill in your values in `.env.local`:
-
-```bash
-SHEETS_SPREADSHEET_ID=your_spreadsheet_id_here
-SHEETS_API_KEY=your_api_key_here
+```env
+NEXT_PUBLIC_SUPABASE_URL=https://xxxx.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJ...
+ALLOWED_EMAILS=you@example.com,friend@example.com
 ```
 
-Environment variables will be used by default when present. Users can still override these in the settings UI if needed, or revert back to using the environment values.
+### 3. Run
 
-### 2. User Interface Configuration
+```bash
+bun run dev
+```
 
-To configure directly through the UI:
+Open [http://localhost:3000](http://localhost:3000).
 
-1. Create a Google Sheet with the following columns:
-   - name: The subscription name (e.g., Netflix)
-   - amount: The cost of the subscription
-   - currency: The currency symbol (e.g., €)
-   - frequency: How often the subscription renews (e.g., monthly)
-   - dayOfMonth: The day of the month when payment is due
-   - color: The brand color in hex format (e.g., #E50914)
-   - logo: A letter or short text to represent the logo
-   - startDate: When you first subscribed (YYYY-MM-DD format)
-   - endDate: When subsription ended (YYYY-MM-DD format) `[unused]`
+> The dev server tries HTTPS first (`--experimental-https`). If it fails, run `mkcert -install` in an admin PowerShell session and try again, or just use plain HTTP.
 
-2. Share your Google Sheet to "anyone with the link"
+---
 
-3. Enable the Google Sheets API:
-   - Go to the [Google Developers Console](https://console.developers.google.com/)
-   - Create a new project or select an existing one
-   - Enable the Google Sheets API
-   - Create an API key
-   - Copy your API key and spreadsheet ID (the long string in your spreadsheet URL)
+## Supabase setup
 
-4. Enter these credentials in the application's setup page
+### Create the project
 
-## Technologies Used
+1. Go to [supabase.com](https://supabase.com/) → New project
+2. Recommended security settings:
+   - ✅ Enable Data API
+   - ❌ Automatically expose new tables (disable — control access manually)
+   - ✅ Enable automatic RLS
 
-- Next.js / React
-- TypeScript
-- Tailwind CSS
-- Google Sheets API
+### Run the schema
+
+Open **SQL Editor** in your Supabase dashboard and run the contents of [`supabase/schema.sql`](supabase/schema.sql).
+
+This creates the `subscriptions` table, grants the `authenticated` role access, enables Row Level Security (each user sees only their own rows), and adds an `updated_at` trigger.
+
+### Enable Google OAuth
+
+Follow the [Supabase Google Auth guide](https://supabase.com/docs/guides/auth/social-login/auth-google), then:
+
+1. In **Supabase → Authentication → Providers → Google**, enable Google and paste your Client ID and Client Secret.
+2. In **Supabase → Authentication → URL Configuration**:
+   - **Site URL**: `https://your-domain.com`
+   - **Redirect URLs** (add both):
+     ```
+     https://your-domain.com/auth/callback
+     https://deploy-preview-*--your-netlify-site.netlify.app/auth/callback
+     ```
+3. In **Google Cloud Console → OAuth Client → Authorized redirect URIs**, add:
+   ```
+   https://<your-supabase-project-ref>.supabase.co/auth/v1/callback
+   ```
+
+---
+
+## Netlify deployment
+
+Set these environment variables in **Netlify → Site configuration → Environment variables**:
+
+| Variable | Value |
+|---|---|
+| `NEXT_PUBLIC_SUPABASE_URL` | Your Supabase project URL |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Your Supabase anon key |
+| `ALLOWED_EMAILS` | Comma-separated list of allowed Google account emails |
+
+---
+
+## Troubleshooting
+
+**Redirected to `localhost` after Google login**
+> Supabase's Site URL is still set to `localhost:3000`. Update it to your production URL in Supabase → Authentication → URL Configuration.
+
+**`permission denied for table subscriptions`**
+> The `authenticated` role is missing table grants. Re-run `supabase/schema.sql` (it includes `GRANT SELECT, INSERT, UPDATE, DELETE ON public.subscriptions TO authenticated`).
+
+**Access denied page after login**
+> Your Google account email is not in `ALLOWED_EMAILS`. Add it and redeploy.
+
+---
 
 ## Disclaimer
 
-Parts of this project were developed with the assistance of AI tools, including GitHub Copilot and Claude 3.7 Sonnet (Preview).
+Parts of this project were developed with the assistance of AI tools, including GitHub Copilot and Claude Sonnet.
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+MIT — see [LICENSE](LICENSE).
