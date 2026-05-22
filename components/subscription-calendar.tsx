@@ -27,6 +27,7 @@ import styles from "../styles/calendar.module.css";
 import SpendingChart from "./spending-chart";
 import { useSubscriptions } from "@/hooks/useSubscriptions";
 import SubscriptionForm from "./SubscriptionForm";
+import ImportModal from "./ImportModal";
 import { createClient } from "@/lib/supabase/client";
 
 interface CalendarDayObject {
@@ -56,6 +57,7 @@ const SubscriptionCalendar: React.FC = () => {
   const [showSpendingChart, setShowSpendingChart] = useState<boolean>(false);
   const [showAddForm, setShowAddForm] = useState<boolean>(false);
   const [editingSubscription, setEditingSubscription] = useState<Subscription | null>(null);
+  const [showImport, setShowImport] = useState<boolean>(false);
   const [lastFetchTime, setLastFetchTime] = useState<Date | undefined>(undefined);
 
   const { subscriptions, loading, error, add, update, remove } = useSubscriptions(inDemoMode, mockSubscriptions);
@@ -560,6 +562,20 @@ const SubscriptionCalendar: React.FC = () => {
           />
         )}
 
+        {/* CSV Import modal */}
+        {showImport && (
+          <ImportModal
+            isDarkMode={isDarkMode}
+            onImport={async (inputs) => {
+              for (const input of inputs) {
+                await add(input);
+              }
+              setShowImport(false);
+            }}
+            onCancel={() => setShowImport(false)}
+          />
+        )}
+
         {/* Day Subscriptions Overlay (for mobile) */}
         {selectedDay && (
           <DaySubscriptionsOverlay
@@ -619,14 +635,24 @@ const SubscriptionCalendar: React.FC = () => {
 
               <div className="flex items-center ml-2 gap-1">
                 {!inDemoMode && (
-                  <button
-                    onClick={() => setShowAddForm(true)}
-                    className="p-2 rounded-full bg-blue-600 text-white hover:bg-blue-500 transition-colors"
-                    aria-label="Add subscription"
-                    title="Add subscription"
-                  >
-                    ＋
-                  </button>
+                  <>
+                    <button
+                      onClick={() => setShowAddForm(true)}
+                      className="p-2 rounded-full bg-blue-600 text-white hover:bg-blue-500 transition-colors"
+                      aria-label="Add subscription"
+                      title="Add subscription"
+                    >
+                      ＋
+                    </button>
+                    <button
+                      onClick={() => setShowImport(true)}
+                      className="p-2 rounded-full bg-gray-700 text-white hover:bg-gray-600 transition-colors text-sm"
+                      aria-label="Import from CSV"
+                      title="Import from CSV"
+                    >
+                      ↑
+                    </button>
+                  </>
                 )}
                 <button
                   onClick={toggleDarkMode}
