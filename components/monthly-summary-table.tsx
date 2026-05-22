@@ -3,6 +3,7 @@ import { Subscription } from '@/lib/subscriptions';
 import { isPaymentInMonth } from '@/lib/frequency-utils';
 import { parseDate } from './date-utils';
 import { renderSubscriptionIcon } from './icon-utils';
+import { useI18n } from '@/lib/i18n';
 
 interface MonthlySummaryTableProps {
   subscriptions: Subscription[];
@@ -27,6 +28,7 @@ const MonthlySummaryTable: React.FC<MonthlySummaryTableProps> = ({
   onSubscriptionLeave,
   onDayClick,
 }) => {
+  const { t } = useI18n();
   // Group subscriptions by day of month, filtering by frequency
   const subscriptionsByDay: Record<number, Subscription[]> = {};
   
@@ -81,7 +83,7 @@ const MonthlySummaryTable: React.FC<MonthlySummaryTableProps> = ({
       <h2 className={`text-lg font-semibold p-3 ${
         isDarkMode ? 'bg-gray-800' : 'bg-gray-100'
       }`}>
-        Monthly Summary
+        {t.summaryTable.title}
       </h2>
       
       <div className="overflow-x-auto">
@@ -91,13 +93,13 @@ const MonthlySummaryTable: React.FC<MonthlySummaryTableProps> = ({
           }`}>
             <tr>
               <th className="py-2 px-3 text-left text-xs font-medium uppercase tracking-wider">
-                Day
+                {t.summaryTable.dayHeader}
               </th>
               <th className="py-2 px-3 text-left text-xs font-medium uppercase tracking-wider">
-                Subscriptions
+                {t.summaryTable.subscriptionsHeader}
               </th>
               <th className="py-2 px-3 text-right text-xs font-medium uppercase tracking-wider">
-                Amount
+                {t.summaryTable.amountHeader}
               </th>
             </tr>
           </thead>
@@ -145,7 +147,7 @@ const MonthlySummaryTable: React.FC<MonthlySummaryTableProps> = ({
             ) : (
               <tr className={isDarkMode ? 'bg-gray-800' : 'bg-white'}>
                 <td colSpan={3} className="py-3 px-3 text-center text-sm italic">
-                  No subscriptions this month
+                  {t.summaryTable.noSubscriptionsEmpty}
                 </td>
               </tr>
             )}
@@ -155,7 +157,7 @@ const MonthlySummaryTable: React.FC<MonthlySummaryTableProps> = ({
           }`}>
             <tr>
               <th className="py-2 px-3 text-left text-xs font-medium" colSpan={2}>
-                Monthly Total
+                {t.summaryTable.monthlyTotal}
               </th>
               <th className="py-2 px-3 text-right text-xs font-medium">
                 {formatCurrency(

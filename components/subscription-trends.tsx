@@ -2,6 +2,7 @@ import React from "react";
 import { Subscription } from "@/lib/subscriptions";
 import { isPaymentInMonth } from "@/lib/frequency-utils";
 import { parseDate } from "./date-utils";
+import { useI18n } from "@/lib/i18n";
 
 interface SubscriptionTrendsProps {
   subscriptions: Subscription[];
@@ -20,6 +21,7 @@ const SubscriptionTrends: React.FC<SubscriptionTrendsProps> = ({
   currentMonth,
   currentYear,
 }) => {
+  const { t, tpl } = useI18n();
   // Get currency for formatting
   const currency =
     subscriptions.length > 0
@@ -116,10 +118,10 @@ const SubscriptionTrends: React.FC<SubscriptionTrendsProps> = ({
           isDarkMode ? "bg-gray-800" : "bg-gray-100"
         }`}
       >
-        <span>Spending Trends</span>
+        <span>{t.trends.title}</span>
         {lastFetchTime && (
           <span className="text-xs text-gray-500">
-            Updated: {lastFetchTime.toLocaleString(userLocale)}
+            {tpl(t.trends.updatedLabel, { date: lastFetchTime.toLocaleString(userLocale) })}
           </span>
         )}
       </h2>
@@ -149,21 +151,21 @@ const SubscriptionTrends: React.FC<SubscriptionTrendsProps> = ({
           </div>
           <div className={`text-xs ${getChangeClass(prevToCurrentChange)}`}>
             {getChangeIndicator(prevToCurrentChange)}{" "}
-            {Math.abs(prevToCurrentChange).toFixed(1)}%
+            {tpl(t.trends.percentageChange, { sign: "", percent: Math.abs(prevToCurrentChange).toFixed(1) })}
           </div>
         </div>
 
         {/* Next Month (Projected) */}
         <div className="p-4 text-center border-l border-gray-700">
           <div className="text-xs uppercase tracking-wider text-gray-500 mb-1">
-            {getMonthName(nextMonth, nextYear)} (Projected)
+            {tpl(t.trends.projectedLabel, { month: getMonthName(nextMonth, nextYear) })}
           </div>
           <div className="text-lg font-bold">
             {formatCurrency(nextMonthTotal)}
           </div>
           <div className={`text-xs ${getChangeClass(currentToNextChange)}`}>
             {getChangeIndicator(currentToNextChange)}{" "}
-            {Math.abs(currentToNextChange).toFixed(1)}%
+            {tpl(t.trends.percentageChange, { sign: "", percent: Math.abs(currentToNextChange).toFixed(1) })}
           </div>
         </div>
       </div>

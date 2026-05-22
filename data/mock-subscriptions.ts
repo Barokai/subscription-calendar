@@ -1,4 +1,5 @@
 import { Subscription } from '@/lib/subscriptions';
+import { Income } from '@/lib/incomes';
 
 const NOW = new Date().toISOString();
 
@@ -89,6 +90,33 @@ export const mockSubscriptions: Subscription[] = [
     color: '#BADA55',
     category: 'Health & Fitness',
     startDate: '2024-12-12',
+    endDate: null,
+    createdAt: NOW,
+    updatedAt: NOW,
+  },
+];
+
+export const mockIncomes: Income[] = [
+  {
+    id: 'income-1',
+    userId: 'demo',
+    name: 'Salary',
+    amount: 3200,
+    currency: 'EUR',
+    dayOfMonth: 25,
+    startDate: '2023-01-01',
+    endDate: null,
+    createdAt: NOW,
+    updatedAt: NOW,
+  },
+  {
+    id: 'income-2',
+    userId: 'demo',
+    name: 'Freelance',
+    amount: 500,
+    currency: 'EUR',
+    dayOfMonth: 1,
+    startDate: '2024-01-01',
     endDate: null,
     createdAt: NOW,
     updatedAt: NOW,

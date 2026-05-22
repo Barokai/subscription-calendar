@@ -385,8 +385,57 @@ describe("parsePivotCsv — month header formats", () => {
 });
 
 // ---------------------------------------------------------------------------
-// detectFormat
+// parsePivotCsv — price variance detection
 // ---------------------------------------------------------------------------
+
+describe("parsePivotCsv — price variance", () => {
+  it("sets hasPriceVariance=false when all amounts are equal", () => {
+    const rows = [
+      ["Name", "Jan 2024", "Feb 2024", "Mar 2024"],
+      ["Netflix", "9.99", "9.99", "9.99"],
+    ];
+    const [r] = parsePivotCsv(rows);
+    expect(r.hasPriceVariance).toBe(false);
+    expect(r.minAmount).toBe(9.99);
+    expect(r.maxAmount).toBe(9.99);
+  });
+
+  it("sets hasPriceVariance=true when amounts differ", () => {
+    const rows = [
+      ["Name", "Jan 2024", "Feb 2024", "Mar 2024"],
+      ["Gas", "90.00", "90.00", "64.00"],
+    ];
+    const [r] = parsePivotCsv(rows);
+    expect(r.hasPriceVariance).toBe(true);
+    expect(r.minAmount).toBe(64);
+    expect(r.maxAmount).toBe(90);
+  });
+
+  it("sets hasPriceVariance=true for German amounts with varying values", () => {
+    const rows = [
+      ["Beschreibung", "Häufigkeit", "Jänner", "Februar", "März", "April"],
+      ["Haushaltsversicherung", "Monatlich", "26,85 €", "26,85 €", "25,97 €", "25,97 €"],
+    ];
+    const [r] = parsePivotCsv(rows);
+    expect(r.hasPriceVariance).toBe(true);
+    expect(r.minAmount).toBeCloseTo(25.97, 2);
+    expect(r.maxAmount).toBeCloseTo(26.85, 2);
+  });
+
+  it("sets hasPriceVariance=false for single-payment yearly subscription", () => {
+    const rows = [
+      ["Name", "Jan 2024", "Feb 2024", "Mar 2024", "Apr 2024", "May 2024", "Jun 2024",
+       "Jul 2024", "Aug 2024", "Sep 2024", "Oct 2024", "Nov 2024", "Dec 2024"],
+      ["Annual sub", "", "", "", "", "", "", "", "", "", "", "", "50.00"],
+    ];
+    const [r] = parsePivotCsv(rows);
+    expect(r.hasPriceVariance).toBe(false);
+    expect(r.minAmount).toBe(50);
+    expect(r.maxAmount).toBe(50);
+  });
+});
+
+
 
 describe("detectFormat", () => {
   it("detects pivot format when headers include month names", () => {

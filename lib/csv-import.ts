@@ -268,6 +268,9 @@ export interface PivotRow {
   startDate: string; // ISO YYYY-MM-DD
   endDate: string | null;
   dayOfMonth: number;
+  hasPriceVariance: boolean;
+  minAmount: number;
+  maxAmount: number;
 }
 
 /**
@@ -433,6 +436,11 @@ export function parsePivotCsv(rows: string[][]): PivotRow[] {
       ? ({ "€": "EUR", $: "USD", "£": "GBP", "¥": "JPY" }[currencyMatch[0]] ?? "EUR")
       : "EUR";
 
+    // ── Price variance ────────────────────────────────────────────────────
+    const minAmount = Math.min(...amounts);
+    const maxAmount = Math.max(...amounts);
+    const hasPriceVariance = minAmount !== maxAmount;
+
     results.push({
       name: rawName,
       category,
@@ -442,6 +450,9 @@ export function parsePivotCsv(rows: string[][]): PivotRow[] {
       startDate: firstMonth.toISOString().slice(0, 10),
       endDate: isEnded ? lastMonth.toISOString().slice(0, 10) : null,
       dayOfMonth: 1,
+      hasPriceVariance,
+      minAmount,
+      maxAmount,
     });
   }
 
