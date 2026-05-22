@@ -1,5 +1,6 @@
 import React from "react";
-import { Subscription, isPaymentInMonth } from "./google-sheets-service";
+import { Subscription } from "@/lib/subscriptions";
+import { isPaymentInMonth } from "./google-sheets-service";
 import { parseDate } from "./date-utils";
 
 interface SubscriptionTrendsProps {

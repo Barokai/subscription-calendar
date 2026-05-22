@@ -1,5 +1,5 @@
 import React from 'react';
-import { Subscription } from './google-sheets-service';
+import { Subscription } from '@/lib/subscriptions';
 import { renderSubscriptionIcon } from './icon-utils';
 
 interface DaySubscriptionsOverlayProps {
@@ -58,7 +58,7 @@ const DaySubscriptionsOverlay: React.FC<DaySubscriptionsOverlayProps> = ({
             >
               <div className="flex items-center">
                 <div className="w-10 h-10 mr-3">
-                  {renderSubscriptionIcon(subscription.logo, subscription.color, "w-full h-full", isDarkMode)}
+                  {renderSubscriptionIcon(subscription.name, subscription.color, "w-full h-full")}
                 </div>
                 <div>
                   <div className="font-medium">{subscription.name}</div>

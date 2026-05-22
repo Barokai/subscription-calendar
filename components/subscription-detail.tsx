@@ -1,7 +1,8 @@
 import React from "react";
-import { Subscription } from "./google-sheets-service";
+import { Subscription } from "@/lib/subscriptions";
 import { parseDate } from "./date-utils";
 import { renderSubscriptionIcon } from "./icon-utils";
+import { getServiceColor } from "@/lib/icons";
 
 interface SubscriptionDetailProps {
   subscription: Subscription;
@@ -9,8 +10,10 @@ interface SubscriptionDetailProps {
   isDarkMode: boolean;
   userLocale: string;
   calculateTotalSpent: (subscription: Subscription) => string;
-  positionType?: "hover" | "click"; // New prop to differentiate between hover and click positioning
+  positionType?: "hover" | "click";
   onClose?: () => void;
+  onEdit?: (sub: Subscription) => void;
+  onDelete?: (id: string) => void;
 }
 
 const SubscriptionDetail: React.FC<SubscriptionDetailProps> = ({
@@ -19,8 +22,10 @@ const SubscriptionDetail: React.FC<SubscriptionDetailProps> = ({
   isDarkMode,
   userLocale,
   calculateTotalSpent,
-  positionType = "hover", // Default to hover behavior for backward compatibility
+  positionType = "hover",
   onClose,
+  onEdit,
+  onDelete,
 }) => {
   if (!subscription) {
     return null;
@@ -31,14 +36,7 @@ const SubscriptionDetail: React.FC<SubscriptionDetailProps> = ({
     // Start with today's date
     const today = new Date();
 
-    // Parse the start date properly
     const startDate = parseDate(sub.startDate, userLocale);
-    console.log(`Calculating next payment for subscription ${sub.name}:`);
-    console.log(`- Start date: ${startDate.toISOString()}`);
-    console.log(`- Frequency: ${sub.frequency}`);
-    console.log(`- Day of month: ${sub.dayOfMonth}`);
-
-    // Create result date
     const result = new Date();
 
     // Set the day of month first (to handle different months properly)
@@ -126,7 +124,6 @@ const SubscriptionDetail: React.FC<SubscriptionDetailProps> = ({
         }
     }
 
-    console.log(`- Next payment: ${result.toISOString()}`);
     return result;
   };
 
@@ -172,7 +169,7 @@ const SubscriptionDetail: React.FC<SubscriptionDetailProps> = ({
       style={{
         left: `${position.x}px`,
         top: `${position.y}px`,
-        border: `2px solid ${subscription.color}`,
+        border: `2px solid #${getServiceColor(subscription.name, subscription.color)}`,
         transform: transform,
       }}
       data-subscription-detail="true"
@@ -189,7 +186,7 @@ const SubscriptionDetail: React.FC<SubscriptionDetailProps> = ({
 
       <div className="flex items-center mb-4">
         <div className="w-8 h-8 mr-3">
-          {renderSubscriptionIcon(subscription.logo, subscription.color, "w-full h-full", isDarkMode)}
+          {renderSubscriptionIcon(subscription.name, subscription.color, "w-full h-full")}
         </div>
         <h3 className="text-lg font-bold">{subscription.name}</h3>
         <div className="ml-auto text-lg font-bold">
@@ -227,11 +224,43 @@ const SubscriptionDetail: React.FC<SubscriptionDetailProps> = ({
           <span>Next: {formattedNextPayment}</span>
           <span>Since {formattedStartDate}</span>
         </div>
-        <div className="flex justify-between border-t border-gray-700 pt-1 mt-1">
+        {subscription.category && (
+          <div className="flex justify-between">
+            <span>Category:</span>
+            <span className="text-gray-400">{subscription.category}</span>
+          </div>
+        )}
+        <div
+          className="flex justify-between border-t pt-1 mt-1"
+          style={{ borderColor: `#${getServiceColor(subscription.name, subscription.color)}40` }}
+        >
           <span>Total spent:</span>
           <span>{calculateTotalSpent(subscription)}</span>
         </div>
       </div>
+
+      {positionType === "click" && (onEdit || onDelete) && (
+        <div className="flex gap-2 mt-3 pt-2 border-t border-gray-700">
+          {onEdit && (
+            <button
+              onClick={() => onEdit(subscription)}
+              className="flex-1 py-1 text-xs rounded bg-blue-600 hover:bg-blue-500 text-white transition-colors"
+            >
+              Edit
+            </button>
+          )}
+          {onDelete && (
+            <button
+              onClick={() => {
+                if (confirm(`Delete "${subscription.name}"?`)) { onDelete(subscription.id); }
+              }}
+              className="flex-1 py-1 text-xs rounded bg-red-700 hover:bg-red-600 text-white transition-colors"
+            >
+              Delete
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 };

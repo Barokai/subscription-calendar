@@ -1,5 +1,6 @@
 import React, { useRef, useEffect, useState } from "react";
-import { Subscription } from "./google-sheets-service";
+import { Subscription } from "@/lib/subscriptions";
+import { getServiceColor } from "@/lib/icons";
 
 interface SpendingChartProps {
   subscriptions: Subscription[];
@@ -106,7 +107,7 @@ const SpendingChart: React.FC<SpendingChartProps> = ({
       percentage,
       startAngle,
       endAngle,
-      color: subscription.color,
+      color: `#${getServiceColor(subscription.name, subscription.color)}`,
     });
   });
 
@@ -363,7 +364,7 @@ const SpendingChart: React.FC<SpendingChartProps> = ({
             >
               <div
                 className="w-4 h-4 rounded-full mr-2 flex-shrink-0"
-                style={{ backgroundColor: segment.subscription.color }}
+                style={{ backgroundColor: `#${getServiceColor(segment.subscription.name, segment.subscription.color)}` }}
               />
               <div className="flex-1 min-w-0">
                 <div className="font-medium truncate">
