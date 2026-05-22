@@ -189,6 +189,12 @@ Interval/frequency mapping: `Monatlich` → monthly, `Quartal`/`Quarterly` → q
   ```
 - Before any push: run `bun run build` + `bun run test`. Both must pass.
 - Schema changes (`supabase/schema.sql`) must be accompanied by a note in the PR body reminding the reviewer to run the SQL in the Supabase dashboard.
+- **Always update the PR description after every push.** The description must include: what changed, any manual steps required (e.g. Supabase SQL to run), and any env vars added. Use `update_pull_request` tool — never leave the PR description stale.
+
+## Next.js 16 notes
+
+- **Proxy file:** In Next.js 16, `middleware.ts` was renamed to `proxy.ts`. The root proxy file is `proxy.ts` — the actual session logic lives in `lib/supabase/middleware.ts` (unchanged). The exported function must be named `proxy`, not `middleware`.
+- Do not re-introduce `middleware.ts` — Netlify will crash the edge function if the deprecated name is used.
 
 ---
 
