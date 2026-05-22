@@ -21,6 +21,7 @@ import {
 } from "./date-utils";
 import MonthlySummaryTable from "./monthly-summary-table";
 import SubscriptionTrends from "./subscription-trends";
+import YearlyProjection from "./YearlyProjection";
 import DaySubscriptionsOverlay from "./day-subscriptions-overlay";
 import { getSubscriptionsForDay, SubscriptionIcons } from "./calendar-helpers";
 import styles from "../styles/calendar.module.css";
@@ -780,6 +781,13 @@ const SubscriptionCalendar: React.FC = () => {
             lastFetchTime={lastFetchTime}
             currentMonth={currentDate.getMonth()}
             currentYear={currentDate.getFullYear()}
+          />
+
+          {/* Yearly Projection & Insights */}
+          <YearlyProjection
+            subscriptions={subscriptions}
+            userLocale={userLocale}
+            isDarkMode={isDarkMode}
           />
         </div>
       </div>
