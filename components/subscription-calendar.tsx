@@ -534,8 +534,8 @@ const SubscriptionCalendar: React.FC = () => {
             onClose={() => {
               setSelectedSubscription(null);
             }}
-            onEdit={!inDemoMode ? (sub) => { setEditingSubscription(sub); setSelectedSubscription(null); } : undefined}
-            onDelete={!inDemoMode ? async (id) => { await remove(id); setSelectedSubscription(null); } : undefined}
+            onEdit={(sub) => { setEditingSubscription(sub); setSelectedSubscription(null); }}
+            onDelete={async (id) => { await remove(id); setSelectedSubscription(null); }}
           />
         )}
 
@@ -640,25 +640,23 @@ const SubscriptionCalendar: React.FC = () => {
               </div>
 
               <div className="flex items-center ml-2 gap-1">
+                <button
+                  onClick={() => setShowAddForm(true)}
+                  className="p-2 rounded-full bg-blue-600 text-white hover:bg-blue-500 transition-colors"
+                  aria-label={t.nav.addSubscriptionButton}
+                  title={t.nav.addSubscriptionButton}
+                >
+                  ＋
+                </button>
                 {!inDemoMode && (
-                  <>
-                    <button
-                      onClick={() => setShowAddForm(true)}
-                      className="p-2 rounded-full bg-blue-600 text-white hover:bg-blue-500 transition-colors"
-                      aria-label={t.nav.addSubscriptionButton}
-                      title={t.nav.addSubscriptionButton}
-                    >
-                      ＋
-                    </button>
-                    <button
-                      onClick={() => setShowImport(true)}
-                      className="p-2 rounded-full bg-gray-700 text-white hover:bg-gray-600 transition-colors text-sm"
-                      aria-label={t.nav.importFromCsv}
-                      title={t.nav.importFromCsv}
-                    >
-                      ↑
-                    </button>
-                  </>
+                  <button
+                    onClick={() => setShowImport(true)}
+                    className="p-2 rounded-full bg-gray-700 text-white hover:bg-gray-600 transition-colors text-sm"
+                    aria-label={t.nav.importFromCsv}
+                    title={t.nav.importFromCsv}
+                  >
+                    ↑
+                  </button>
                 )}
                 <button
                   onClick={toggleDarkMode}
