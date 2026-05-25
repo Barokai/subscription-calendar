@@ -178,7 +178,10 @@ const YearlyProjection: React.FC<YearlyProjectionProps> = ({
             const pct = projectedAnnual > 0 ? (yearly / projectedAnnual) * 100 : 0;
             return (
               <div key={sub.id} className="flex items-center gap-2">
-                <span className={`text-sm flex-1 truncate ${subtext}`}>{sub.name}</span>
+                <div className={`text-sm flex-1 min-w-0 ${subtext}`}>
+                  <span className="truncate">{sub.name}</span>
+                  {sub.category && <span className={`ml-1.5 text-xs ${muted}`}>· {sub.category}</span>}
+                </div>
                 <span className={`text-xs ${muted} w-20 text-right`}>
                   {sub.frequency !== "yearly" ? tpl(t.yearlyProjection.costPerFrequency, { amount: fmtExact(sub.amount), frequency: sub.frequency }) : ""}
                 </span>
