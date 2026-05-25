@@ -409,7 +409,10 @@ export function parsePivotCsv(rows: string[][]): PivotRow[] {
     if (monthAmounts.length === 0) { continue; }
 
     // ── Frequency ─────────────────────────────────────────────────────────
-    let frequency = rawFreq ? mapFrequency(rawFreq) : "";
+    // Track whether the user explicitly provided a frequency in the CSV.
+    // If they did, we trust the subscription is ongoing (no auto-end date).
+    const hasExplicitFrequency = rawFreq.trim() !== "" && mapFrequency(rawFreq.trim()) !== "";
+    let frequency = hasExplicitFrequency ? mapFrequency(rawFreq.trim()) : "";
     if (!frequency) {
       frequency = inferFrequency(monthAmounts.map((m) => m.monthIndex));
     }
@@ -425,7 +428,9 @@ export function parsePivotCsv(rows: string[][]): PivotRow[] {
     const firstMonth = sortedMonths[0].date;
     const lastMonth = sortedMonths[sortedMonths.length - 1].date;
     const lastDataMonth = monthCols[monthCols.length - 1].date;
-    const isEnded = lastMonth.getTime() < lastDataMonth.getTime();
+    // Only infer end date from payment pattern when no explicit frequency was given.
+    // A yearly expense that appears once in the data window should not be marked as ended.
+    const isEnded = !hasExplicitFrequency && lastMonth.getTime() < lastDataMonth.getTime();
 
     // ── Detect currency ────────────────────────────────────────────────────
     const currencyMatch = row

@@ -12,15 +12,20 @@ import {
   type PivotRow,
   type ColumnMapping,
 } from "@/lib/csv-import";
-import { SubscriptionInput } from "@/lib/subscriptions";
+import { Subscription, SubscriptionInput } from "@/lib/subscriptions";
+import { Income, IncomeInput } from "@/lib/incomes";
 import { renderSubscriptionIcon } from "./icon-utils";
 import { useI18n } from "@/lib/i18n";
 
-type Step = "upload" | "preview" | "confirm";
+type Step = "upload" | "preview";
+type PivotType = "expenses" | "income";
 
 interface ImportModalProps {
   isDarkMode: boolean;
+  existingSubscriptions: Subscription[];
+  existingIncomes: Income[];
   onImport: (subscriptions: SubscriptionInput[]) => Promise<void>;
+  onImportIncomes?: (incomes: IncomeInput[]) => Promise<void>;
   onCancel: () => void;
 }
 
@@ -38,13 +43,13 @@ function toInput(c: RecurringCandidate): SubscriptionInput {
   };
 }
 
-function pivotToInput(p: PivotRow): SubscriptionInput {
+function pivotToExpenseInput(p: PivotRow, dayOfMonth: number): SubscriptionInput {
   return {
     name: p.name,
     amount: p.averageAmount,
     currency: p.currency,
     frequency: p.frequency,
-    dayOfMonth: p.dayOfMonth,
+    dayOfMonth,
     startDate: p.startDate,
     endDate: p.endDate,
     category: p.category || null,
@@ -52,9 +57,23 @@ function pivotToInput(p: PivotRow): SubscriptionInput {
   };
 }
 
+function pivotToIncomeInput(p: PivotRow, dayOfMonth: number): IncomeInput {
+  return {
+    name: p.name,
+    amount: p.averageAmount,
+    currency: p.currency,
+    dayOfMonth,
+    startDate: p.startDate,
+    endDate: p.endDate,
+  };
+}
+
 const ImportModal: React.FC<ImportModalProps> = ({
   isDarkMode,
+  existingSubscriptions,
+  existingIncomes,
   onImport,
+  onImportIncomes,
   onCancel,
 }) => {
   const { t, tpl } = useI18n();
@@ -63,11 +82,13 @@ const ImportModal: React.FC<ImportModalProps> = ({
   const [saving, setSaving] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
 
-  // Parsed state
   const [format, setFormat] = useState<"bank" | "pivot" | null>(null);
   const [bankCandidates, setBankCandidates] = useState<RecurringCandidate[]>([]);
   const [pivotRows, setPivotRows] = useState<PivotRow[]>([]);
   const [selected, setSelected] = useState<Set<number>>(new Set());
+
+  const [pivotType, setPivotType] = useState<PivotType>("expenses");
+  const [defaultDayOfMonth, setDefaultDayOfMonth] = useState("1");
 
   const bg = isDarkMode ? "bg-gray-900 text-white" : "bg-white text-gray-800";
   const inputCls = `w-full px-3 py-2 rounded-md border text-sm ${isDarkMode ? "bg-gray-800 border-gray-600 text-white" : "bg-gray-50 border-gray-300 text-gray-900"}`;
@@ -79,6 +100,14 @@ const ImportModal: React.FC<ImportModalProps> = ({
         ? "border-gray-700 hover:border-gray-500"
         : "border-gray-200 hover:border-gray-400"
     }`;
+
+  const isDuplicate = useCallback((name: string) => {
+    const n = name.toLowerCase().trim();
+    if (pivotType === "income") {
+      return existingIncomes.some((i) => i.name.toLowerCase().trim() === n);
+    }
+    return existingSubscriptions.some((s) => s.name.toLowerCase().trim() === n);
+  }, [pivotType, existingSubscriptions, existingIncomes]);
 
   const processFile = useCallback((text: string) => {
     setError(null);
@@ -97,7 +126,18 @@ const ImportModal: React.FC<ImportModalProps> = ({
         return;
       }
       setPivotRows(parsed);
-      setSelected(new Set(parsed.map((_, i) => i)));
+      // Pre-deselect rows matching existing subscriptions (default type is "expenses")
+      const existingNames = new Set(
+        existingSubscriptions.map((s) => s.name.toLowerCase().trim())
+      );
+      setSelected(
+        new Set(
+          parsed
+            .map((row, i) => ({ row, i }))
+            .filter(({ row }) => !existingNames.has(row.name.toLowerCase().trim()))
+            .map(({ i }) => i)
+        )
+      );
       setFormat("pivot");
     } else {
       const headers = rows[0];
@@ -120,7 +160,7 @@ const ImportModal: React.FC<ImportModalProps> = ({
     }
 
     setStep("preview");
-  }, []);
+  }, [existingSubscriptions, t]);
 
   const handleFile = (file: File) => {
     if (!file.name.endsWith(".csv") && !file.name.endsWith(".txt")) {
@@ -139,8 +179,9 @@ const ImportModal: React.FC<ImportModalProps> = ({
     if (file) { handleFile(file); }
   };
 
+  const total = format === "pivot" ? pivotRows.length : bankCandidates.length;
+
   const toggleAll = () => {
-    const total = format === "pivot" ? pivotRows.length : bankCandidates.length;
     if (selected.size === total) {
       setSelected(new Set());
     } else {
@@ -158,11 +199,19 @@ const ImportModal: React.FC<ImportModalProps> = ({
     setSaving(true);
     setError(null);
     try {
-      const inputs: SubscriptionInput[] =
-        format === "pivot"
-          ? pivotRows.filter((_, i) => selected.has(i)).map(pivotToInput)
-          : bankCandidates.filter((_, i) => selected.has(i)).map(toInput);
-      await onImport(inputs);
+      const day = Math.max(1, Math.min(31, parseInt(defaultDayOfMonth) || 1));
+      if (format === "pivot" && pivotType === "income") {
+        const inputs: IncomeInput[] = pivotRows
+          .filter((_, i) => selected.has(i))
+          .map((p) => pivotToIncomeInput(p, day));
+        if (onImportIncomes) { await onImportIncomes(inputs); }
+      } else {
+        const inputs: SubscriptionInput[] =
+          format === "pivot"
+            ? pivotRows.filter((_, i) => selected.has(i)).map((p) => pivotToExpenseInput(p, day))
+            : bankCandidates.filter((_, i) => selected.has(i)).map(toInput);
+        await onImport(inputs);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : t.importModal.importFailedError);
       setSaving(false);
@@ -177,6 +226,18 @@ const ImportModal: React.FC<ImportModalProps> = ({
     weekly: t.importModal.frequencyWeekly,
   };
 
+  const confirmLabel = () => {
+    if (saving) return t.importModal.importingLabel;
+    if (format === "pivot" && pivotType === "income") {
+      return selected.size !== 1
+        ? tpl(t.importModal.importIncomeButtonPlural, { count: selected.size })
+        : tpl(t.importModal.importIncomeButton, { count: selected.size });
+    }
+    return selected.size !== 1
+      ? tpl(t.importModal.importButtonPlural, { count: selected.size })
+      : tpl(t.importModal.importButton, { count: selected.size });
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black bg-opacity-60 p-2 sm:p-4">
       <div className={`w-full max-w-lg rounded-xl shadow-2xl flex flex-col max-h-[90vh] ${bg}`}>
@@ -188,11 +249,10 @@ const ImportModal: React.FC<ImportModalProps> = ({
               <>
                 {format === "pivot" ? t.importModal.previewPivotTitle : t.importModal.previewTitle}{" "}
                 <span className="text-sm font-normal text-gray-400">
-                  ({tpl(t.importModal.previewFoundCount, { count: format === "pivot" ? pivotRows.length : bankCandidates.length })})
+                  ({tpl(t.importModal.previewFoundCount, { count: total })})
                 </span>
               </>
             )}
-            {step === "confirm" && t.importModal.confirmTitle}
           </h2>
           <button onClick={onCancel} className="text-gray-400 hover:text-gray-200">✕</button>
         </div>
@@ -244,43 +304,82 @@ const ImportModal: React.FC<ImportModalProps> = ({
           {/* ── Step 2: Preview / select ── */}
           {step === "preview" && (
             <div className="space-y-3">
+              {/* Pivot-specific options: type selector + billing day */}
+              {format === "pivot" && (
+                <div className={`flex gap-3 p-3 rounded-lg ${isDarkMode ? "bg-gray-800" : "bg-gray-100"}`}>
+                  <div className="flex-1">
+                    <label className="block text-xs text-gray-400 mb-1">{t.importModal.pivotTypeLabel}</label>
+                    <select
+                      className={inputCls}
+                      value={pivotType}
+                      onChange={(e) => setPivotType(e.target.value as PivotType)}
+                    >
+                      <option value="expenses">{t.importModal.pivotTypeExpenses}</option>
+                      <option value="income">{t.importModal.pivotTypeIncome}</option>
+                    </select>
+                  </div>
+                  <div className="w-28">
+                    <label className="block text-xs text-gray-400 mb-1">{t.importModal.defaultDayLabel}</label>
+                    <input
+                      type="number"
+                      min="1"
+                      max="31"
+                      className={inputCls}
+                      value={defaultDayOfMonth}
+                      onChange={(e) => setDefaultDayOfMonth(e.target.value)}
+                    />
+                  </div>
+                </div>
+              )}
+
               <div className="flex items-center justify-between mb-1">
                 <span className="text-xs text-gray-400">
-                  {tpl(t.importModal.selectedCount, { selected: selected.size, total: format === "pivot" ? pivotRows.length : bankCandidates.length })}
+                  {tpl(t.importModal.selectedCount, { selected: selected.size, total })}
                 </span>
                 <button onClick={toggleAll} className="text-xs text-blue-400 hover:text-blue-300 underline">
-                  {selected.size === (format === "pivot" ? pivotRows.length : bankCandidates.length) ? t.importModal.deselectAll : t.importModal.selectAll}
+                  {selected.size === total ? t.importModal.deselectAll : t.importModal.selectAll}
                 </button>
               </div>
 
               {format === "pivot" &&
-                pivotRows.map((row, i) => (
-                  <div key={i} className={rowCls(selected.has(i))} onClick={() => toggle(i)}>
-                    <input type="checkbox" readOnly checked={selected.has(i)} className="flex-shrink-0" />
-                    <div className="w-8 h-8 flex-shrink-0">
-                      {renderSubscriptionIcon(row.name, null, "w-full h-full")}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="font-medium truncate">{row.name}</div>
-                      <div className="text-xs text-gray-400">
-                        {row.category && <span className="mr-2">{row.category}</span>}
-                        {FREQ_LABEL[row.frequency] ?? row.frequency}
-                        {row.endDate && <span className="ml-2 text-yellow-500">{tpl(t.importModal.endedLabel, { endDate: row.endDate })}</span>}
-                        {row.hasPriceVariance && (
-                          <span className="ml-2 text-amber-400" title={tpl(t.importModal.priceVarianceWarning, { min: row.minAmount.toFixed(2), max: row.maxAmount.toFixed(2) })}>
-                            {t.importModal.priceVariesLabel}
-                          </span>
-                        )}
+                pivotRows.map((row, i) => {
+                  const dup = isDuplicate(row.name);
+                  return (
+                    <div key={i} className={rowCls(selected.has(i))} onClick={() => toggle(i)}>
+                      <input type="checkbox" readOnly checked={selected.has(i)} className="flex-shrink-0" />
+                      <div className="w-8 h-8 flex-shrink-0">
+                        {renderSubscriptionIcon(row.name, null, "w-full h-full")}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="font-medium truncate">{row.name}</div>
+                        <div className="text-xs text-gray-400 flex flex-wrap gap-x-2 gap-y-0.5">
+                          {row.category && <span>{row.category}</span>}
+                          <span>{FREQ_LABEL[row.frequency] ?? row.frequency}</span>
+                          {row.endDate && (
+                            <span className="text-yellow-500">{tpl(t.importModal.endedLabel, { endDate: row.endDate })}</span>
+                          )}
+                          {row.hasPriceVariance && (
+                            <span
+                              className="text-amber-400"
+                              title={tpl(t.importModal.priceVarianceWarning, { min: row.minAmount.toFixed(2), max: row.maxAmount.toFixed(2) })}
+                            >
+                              {t.importModal.priceVariesLabel}
+                            </span>
+                          )}
+                          {dup && (
+                            <span className="text-orange-400">⚠ {t.importModal.duplicateWarning}</span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="text-right flex-shrink-0">
+                        <div className="font-semibold">
+                          {row.averageAmount.toLocaleString("en", { style: "currency", currency: row.currency })}
+                        </div>
+                        <div className="text-xs text-gray-500">since {row.startDate.slice(0, 7)}</div>
                       </div>
                     </div>
-                    <div className="text-right flex-shrink-0">
-                      <div className="font-semibold">
-                        {row.averageAmount.toLocaleString("en", { style: "currency", currency: row.currency })}
-                      </div>
-                      <div className="text-xs text-gray-500">since {row.startDate.slice(0, 7)}</div>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
 
               {format === "bank" &&
                 bankCandidates.map((c, i) => (
@@ -332,12 +431,7 @@ const ImportModal: React.FC<ImportModalProps> = ({
                 disabled={selected.size === 0 || saving}
                 className="flex-1 py-2 rounded-md text-sm bg-blue-600 hover:bg-blue-500 text-white font-medium transition-colors disabled:opacity-50"
               >
-                {saving
-                  ? t.importModal.importingLabel
-                  : selected.size !== 1
-                    ? tpl(t.importModal.importButtonPlural, { count: selected.size })
-                    : tpl(t.importModal.importButton, { count: selected.size })
-                }
+                {confirmLabel()}
               </button>
             </>
           )}

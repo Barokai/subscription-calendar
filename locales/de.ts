@@ -70,6 +70,13 @@ export const de: Locale = {
     frequencyQuarterly: "Vierteljährlich",
     frequencyBiannually: "Halbjährlich",
     frequencyWeekly: "Wöchentlich",
+    pivotTypeLabel: "Importieren als",
+    pivotTypeExpenses: "Ausgaben",
+    pivotTypeIncome: "Einkommen",
+    defaultDayLabel: "Abbuchungstag",
+    duplicateWarning: "Bereits erfasst",
+    importIncomeButton: "Einkommensquelle importieren",
+    importIncomeButtonPlural: "{count} Einkommensquellen importieren",
   },
   subscriptionForm: {
     addTitle: "Abonnement hinzufügen",
@@ -122,7 +129,7 @@ export const de: Locale = {
     next12MonthsLabel: "Nächste 12 Monate · Prognostizierter Gesamtbetrag {total}",
     savingsInsights: "Sparpotenzial",
     savingsMessage:
-      "{count} {category} Abonnements — du könntest {amount}/Jahr sparen",
+      "{count} {category} Fixkosten — du könntest {amount}/Jahr sparen",
     savingsDetail: "{name} ({amount}/{frequency})",
     annualCostBreakdown: "Jährliche Kostenübersicht",
     costPerFrequency: "{amount}/{frequency}",

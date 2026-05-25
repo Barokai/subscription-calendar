@@ -119,6 +119,8 @@ describe("parsePivotCsv — English simple format", () => {
     const [r] = parsePivotCsv(rows);
     expect(r.frequency).toBe("yearly");
     expect(r.averageAmount).toBe(99);
+    // Explicit interval given — must not be marked as ended even though only one payment
+    expect(r.endDate).toBeNull();
   });
 
   it("parses a quarterly subscription", () => {
@@ -139,10 +141,20 @@ describe("parsePivotCsv — English simple format", () => {
     expect(r.startDate).toBe("2024-02-01");
   });
 
-  it("sets endDate when last paid month is before last data month", () => {
+  it("does NOT set endDate when explicit interval given, even if not paid up to last month", () => {
     const rows = [
       HEADERS,
       ["OldSub", "Other", "monthly", "5.00", "5.00", ""],
+    ];
+    const [r] = parsePivotCsv(rows);
+    // Explicit interval: trust user that subscription is ongoing
+    expect(r.endDate).toBeNull();
+  });
+
+  it("sets endDate when NO explicit interval given and last paid month is before last data month", () => {
+    const rows = [
+      HEADERS,
+      ["OldSub", "Other", "", "5.00", "5.00", ""],
     ];
     const [r] = parsePivotCsv(rows);
     expect(r.endDate).toBe("2024-02-01");
@@ -264,11 +276,13 @@ describe("parsePivotCsv — German format", () => {
     expect(parsePivotCsv(rows)[0].frequency).toBe("quarterly");
   });
 
-  it("maps Jährlich → yearly", () => {
+  it("maps Jährlich → yearly and does not set endDate for single-month payment", () => {
     const rows = buildGermanRows([
       ["", "Rauchfangkehrer", "Jährlich", "", "", "", "", "", "", "", "", "", "50,00 €", "", "", "", ""],
     ]);
-    expect(parsePivotCsv(rows)[0].frequency).toBe("yearly");
+    const [r] = parsePivotCsv(rows);
+    expect(r.frequency).toBe("yearly");
+    expect(r.endDate).toBeNull(); // explicit "Jährlich" — not ended even though only one payment in the window
   });
 
   it("infers yearly when no frequency given and amount appears exactly once", () => {

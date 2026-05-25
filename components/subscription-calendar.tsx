@@ -572,9 +572,17 @@ const SubscriptionCalendar: React.FC = () => {
         {showImport && (
           <ImportModal
             isDarkMode={isDarkMode}
+            existingSubscriptions={subscriptions}
+            existingIncomes={incomes}
             onImport={async (inputs) => {
               for (const input of inputs) {
                 await add(input);
+              }
+              setShowImport(false);
+            }}
+            onImportIncomes={async (inputs) => {
+              for (const input of inputs) {
+                await addIncome(input);
               }
               setShowImport(false);
             }}
