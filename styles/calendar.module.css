@@ -144,3 +144,14 @@
   min-height: 0;
   overflow: hidden;
 }
+
+.incomeRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: center;
+  overflow: hidden;
+  border-top: 1px solid rgba(34, 197, 94, 0.3);
+  padding-top: 2px;
+  margin-top: 2px;
+}
