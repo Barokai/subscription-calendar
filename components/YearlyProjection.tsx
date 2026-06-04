@@ -96,6 +96,15 @@ const YearlyProjection: React.FC<YearlyProjectionProps> = ({
       .sort((a, b) => b[1].length - a[1].length);
   }, [activeNow]);
 
+  const categoryAnnualOverview = useMemo(
+    () =>
+      duplicateCategories.map(([category, subs]) => {
+        const annualTotal = subs.reduce((sum, sub) => sum + annualCost(sub), 0);
+        return { category, subs, annualTotal };
+      }),
+    [duplicateCategories]
+  );
+
   const bg = isDarkMode ? "bg-gray-900" : "bg-white";
   const border = isDarkMode ? "border-gray-700" : "border-gray-200";
   const cardBg = isDarkMode ? "bg-gray-800" : "bg-gray-50";
@@ -166,6 +175,37 @@ const YearlyProjection: React.FC<YearlyProjectionProps> = ({
               </div>
             );
           })}
+        </div>
+      )}
+
+      {categoryAnnualOverview.length > 0 && (
+        <div className="px-4 pb-4 space-y-2">
+          <p className={`text-xs uppercase tracking-wider ${muted}`}>{t.yearlyProjection.categoryAnnualCostBreakdown}</p>
+          {categoryAnnualOverview.map(({ category, subs, annualTotal }) => (
+            <div
+              key={category}
+              className={`rounded-lg border ${border} ${cardBg} p-3`}
+            >
+              <div className="flex items-baseline justify-between gap-3">
+                <div>
+                  <p className={`text-sm font-medium ${subtext}`}>{category}</p>
+                  <p className={`text-xs ${muted}`}>{subs.length} {t.yearlyProjection.categoryRecurringCostsLabel}</p>
+                </div>
+                <p className={`text-sm font-semibold ${text}`}>{tpl(t.yearlyProjection.costPerYear, { amount: fmt(annualTotal) })}</p>
+              </div>
+              <div className={`mt-2 text-xs ${muted} space-y-1`}>
+                {subs
+                  .slice()
+                  .sort((a, b) => annualCost(b) - annualCost(a))
+                  .map((sub) => (
+                    <div key={sub.id} className="flex items-center justify-between gap-2">
+                      <span className="truncate">{sub.name}</span>
+                      <span>{tpl(t.yearlyProjection.costPerYear, { amount: fmtExact(annualCost(sub)) })}</span>
+                    </div>
+                  ))}
+              </div>
+            </div>
+          ))}
         </div>
       )}
 

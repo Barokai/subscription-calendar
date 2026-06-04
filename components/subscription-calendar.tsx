@@ -47,7 +47,7 @@ interface CalendarDayObject {
 }
 
 const SubscriptionCalendar: React.FC = () => {
-  const { t, userLocale } = useI18n();
+  const { t, tpl, userLocale } = useI18n();
   const [currentDate, setCurrentDate] = useState<Date>(new Date());
   const [isDarkMode, setIsDarkMode] = useState<boolean>(true);
   const [inDemoMode, setInDemoMode] = useState<boolean>(false);
@@ -55,6 +55,10 @@ const SubscriptionCalendar: React.FC = () => {
   const [hoveredSubscription, setHoveredSubscription] = useState<Subscription | null>(null);
   const [selectedSubscription, setSelectedSubscription] = useState<Subscription | null>(null);
   const hoverTimeoutRef = useRef<number | null>(null);
+  const [draggedSubscription, setDraggedSubscription] = useState<Subscription | null>(null);
+  const [dropTargetDayKey, setDropTargetDayKey] = useState<string | null>(null);
+  const [pendingDayUpdate, setPendingDayUpdate] = useState<{ subscription: Subscription; targetDay: number } | null>(null);
+  const [dayUpdateError, setDayUpdateError] = useState<string | null>(null);
   const [expandedDayIndexes, setExpandedDayIndexes] = useState<Set<string>>(new Set());
   const [selectedDay, setSelectedDay] = useState<{
     day: number; month: number; year: number; subscriptions: Subscription[];
@@ -460,6 +464,82 @@ const SubscriptionCalendar: React.FC = () => {
     }, 300);
   };
 
+  const handleSubscriptionDragStart = (
+    subscription: Subscription,
+    event: React.DragEvent<HTMLDivElement>
+  ): void => {
+    if (hoverTimeoutRef.current !== null) {
+      window.clearTimeout(hoverTimeoutRef.current);
+    }
+
+    setHoveredSubscription(null);
+    setDraggedSubscription(subscription);
+    setDropTargetDayKey(null);
+    event.dataTransfer.effectAllowed = "move";
+    event.dataTransfer.setData("text/plain", subscription.id);
+  };
+
+  const handleSubscriptionDragEnd = (): void => {
+    setDraggedSubscription(null);
+    setDropTargetDayKey(null);
+  };
+
+  const handleDayDragOver = (
+    event: React.DragEvent<HTMLDivElement>,
+    dayKey: string
+  ): void => {
+    if (!draggedSubscription) {
+      return;
+    }
+
+    event.preventDefault();
+    event.dataTransfer.dropEffect = "move";
+    setDropTargetDayKey(dayKey);
+  };
+
+  const handleDayDrop = (
+    event: React.DragEvent<HTMLDivElement>,
+    dayObj: CalendarDayObject
+  ): void => {
+    event.preventDefault();
+
+    if (!draggedSubscription) {
+      return;
+    }
+
+    if (draggedSubscription.dayOfMonth === dayObj.day) {
+      handleSubscriptionDragEnd();
+      return;
+    }
+
+    setDayUpdateError(null);
+    setPendingDayUpdate({
+      subscription: draggedSubscription,
+      targetDay: dayObj.day,
+    });
+    handleSubscriptionDragEnd();
+  };
+
+  const cancelDayUpdate = (): void => {
+    setPendingDayUpdate(null);
+    setDayUpdateError(null);
+  };
+
+  const confirmDayUpdate = async (): Promise<void> => {
+    if (!pendingDayUpdate) {
+      return;
+    }
+
+    try {
+      await update(pendingDayUpdate.subscription.id, {
+        dayOfMonth: pendingDayUpdate.targetDay,
+      });
+      cancelDayUpdate();
+    } catch (err) {
+      setDayUpdateError(err instanceof Error ? err.message : t.calendar.dayUpdateFailed);
+    }
+  };
+
   // Function to toggle expansion state of a calendar day
   const toggleDayExpansion = (dayKey: string) => {
     const newExpandedDays = new Set(expandedDayIndexes);
@@ -523,6 +603,74 @@ const SubscriptionCalendar: React.FC = () => {
   return (
     <div className="flex justify-center items-start min-h-screen py-2">
       <div className={`max-w-3xl w-full mx-auto ${isDarkMode ? "bg-gray-900 text-white" : "bg-white text-gray-800"} rounded-lg shadow-lg relative`}>
+        {pendingDayUpdate && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60 p-4">
+            <div className={`w-full max-w-md rounded-xl shadow-2xl p-5 ${isDarkMode ? "bg-gray-900 text-white" : "bg-white text-gray-800"}`}>
+              <div className="flex items-start justify-between gap-3 mb-4">
+                <div>
+                  <h2 className="text-lg font-bold">{t.calendar.dayUpdateTitle}</h2>
+                  <p className={`text-sm mt-1 ${isDarkMode ? "text-gray-400" : "text-gray-500"}`}>
+                    {tpl(t.calendar.dayUpdatePrompt, { day: pendingDayUpdate.targetDay })}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={cancelDayUpdate}
+                  className="text-gray-400 hover:text-gray-200"
+                  aria-label={t.calendar.dayUpdateCancel}
+                >
+                  ✕
+                </button>
+              </div>
+
+              <div className={`rounded-lg border p-4 ${isDarkMode ? "border-gray-700 bg-gray-800" : "border-gray-200 bg-gray-50"}`}>
+                <div className={`text-xs uppercase tracking-wider mb-3 ${isDarkMode ? "text-gray-400" : "text-gray-500"}`}>
+                  {t.calendar.dayUpdateDiffLabel}
+                </div>
+                <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3">
+                  <div className="text-center">
+                    <div className="text-xs uppercase tracking-wider text-red-400">{t.calendar.dayUpdateOldLabel}</div>
+                    <div className="mt-2 rounded-md border border-red-500/30 bg-red-500/10 px-3 py-2 font-mono text-lg text-red-300">
+                      {pendingDayUpdate.subscription.dayOfMonth}
+                    </div>
+                  </div>
+                  <div className="text-center text-xl text-gray-400">→</div>
+                  <div className="text-center">
+                    <div className="text-xs uppercase tracking-wider text-green-400">{t.calendar.dayUpdateNewLabel}</div>
+                    <div className="mt-2 rounded-md border border-green-500/30 bg-green-500/10 px-3 py-2 font-mono text-lg text-green-300">
+                      {pendingDayUpdate.targetDay}
+                    </div>
+                  </div>
+                </div>
+                <p className={`mt-3 text-xs ${isDarkMode ? "text-gray-400" : "text-gray-500"}`}>
+                  {pendingDayUpdate.subscription.name}
+                </p>
+              </div>
+
+              {dayUpdateError && (
+                <p className="mt-3 text-sm text-red-400">{dayUpdateError}</p>
+              )}
+
+              <div className="mt-4 flex gap-2">
+                <button
+                  type="button"
+                  onClick={cancelDayUpdate}
+                  className="flex-1 py-2 rounded-md text-sm border border-gray-600 hover:bg-gray-700 transition-colors"
+                >
+                  {t.calendar.dayUpdateCancel}
+                </button>
+                <button
+                  type="button"
+                  onClick={confirmDayUpdate}
+                  className="flex-1 py-2 rounded-md text-sm bg-blue-600 hover:bg-blue-500 text-white font-medium transition-colors"
+                >
+                  {t.calendar.dayUpdateConfirm}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {selectedSubscription && (
           <SubscriptionDetail
             subscription={selectedSubscription}
@@ -736,7 +884,12 @@ const SubscriptionCalendar: React.FC = () => {
                     isDarkMode ? "bg-gray-800" : "bg-gray-100"
                   } ${isGrayed ? "opacity-40" : ""} ${
                     dayObj.isToday ? "ring-2 ring-blue-500" : ""
+                  } ${
+                    dropTargetDayKey === dayKey ? "ring-2 ring-green-500 ring-offset-1 ring-offset-transparent" : ""
                   }`}
+                  onDragEnter={(event) => handleDayDragOver(event, dayKey)}
+                  onDragOver={(event) => handleDayDragOver(event, dayKey)}
+                  onDrop={(event) => handleDayDrop(event, dayObj)}
                   onClick={() =>
                     isMobile &&
                     handleDayClick(
@@ -761,6 +914,8 @@ const SubscriptionCalendar: React.FC = () => {
                         handleSubscriptionHover={handleSubscriptionHover}
                         handleSubscriptionLeave={handleSubscriptionLeave}
                         handleSubscriptionClick={handleSubscriptionClick}
+                        handleSubscriptionDragStart={handleSubscriptionDragStart}
+                        handleSubscriptionDragEnd={handleSubscriptionDragEnd}
                         toggleDayExpansion={toggleDayExpansion}
                       />
                     )}

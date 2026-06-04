@@ -38,6 +38,11 @@ export const SubscriptionIcons: React.FC<{
     subscription: Subscription,
     event: React.MouseEvent
   ) => void;
+  handleSubscriptionDragStart: (
+    subscription: Subscription,
+    event: React.DragEvent<HTMLDivElement>
+  ) => void;
+  handleSubscriptionDragEnd: () => void;
   toggleDayExpansion: (dayKey: string) => void;
 }> = ({
   daySubscriptions,
@@ -46,6 +51,8 @@ export const SubscriptionIcons: React.FC<{
   handleSubscriptionHover,
   handleSubscriptionLeave,
   handleSubscriptionClick,
+  handleSubscriptionDragStart,
+  handleSubscriptionDragEnd,
   toggleDayExpansion,
 }) => {
   const isExpanded = expandedDays.has(dayKey);
@@ -71,12 +78,18 @@ export const SubscriptionIcons: React.FC<{
           <div
             key={subscription.id}
             data-subscription-icon="true"
+            draggable
             onMouseEnter={(e) => handleSubscriptionHover(subscription, e)}
             onMouseLeave={handleSubscriptionLeave}
             onClick={(e) => {
               e.stopPropagation();
               handleSubscriptionClick(subscription, e);
             }}
+            onDragStart={(e) => {
+              e.stopPropagation();
+              handleSubscriptionDragStart(subscription, e);
+            }}
+            onDragEnd={handleSubscriptionDragEnd}
             className={styles.subscriptionIcon}
             title={subscription.name}
           >

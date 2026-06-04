@@ -22,6 +22,14 @@ export const en = {
   },
   calendar: {
     errorWithDemoFallback: "Use demo mode instead",
+    dayUpdateTitle: "Update billing day?",
+    dayUpdatePrompt: "Are you sure you want to update the day to {day}?",
+    dayUpdateDiffLabel: "Change preview",
+    dayUpdateOldLabel: "Old",
+    dayUpdateNewLabel: "New",
+    dayUpdateCancel: "Cancel",
+    dayUpdateConfirm: "Update day",
+    dayUpdateFailed: "Failed to update the billing day",
   },
   importModal: {
     uploadTitle: "Import subscriptions",
@@ -127,6 +135,8 @@ export const en = {
     savingsInsights: "Savings insights",
     savingsMessage: "{count} {category} recurring costs — you could save {amount}/yr",
     savingsDetail: "{name} ({amount}/{frequency})",
+    categoryAnnualCostBreakdown: "Annual cost breakdown for found categories",
+    categoryRecurringCostsLabel: "recurring costs",
     annualCostBreakdown: "Annual cost breakdown",
     costPerFrequency: "{amount}/{frequency}",
     costPerYear: "{amount}/yr",
