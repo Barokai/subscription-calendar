@@ -113,9 +113,9 @@ const IncomeManager: React.FC<IncomeManagerProps> = ({
   return (
     <div className={`rounded-xl border ${isDarkMode ? "border-gray-700" : "border-gray-200"} ${bg}`}>
       {/* Header */}
-      <div className={`flex items-center justify-between px-4 py-3 border-b ${isDarkMode ? "border-gray-700 bg-gray-800" : "border-gray-200 bg-gray-50"} rounded-t-xl`}>
+      <div className={`flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 px-4 py-3 border-b ${isDarkMode ? "border-gray-700 bg-gray-800" : "border-gray-200 bg-gray-50"} rounded-t-xl`}>
         <h2 className="text-base font-semibold">{t.income.title}</h2>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center justify-between sm:justify-end gap-3 w-full sm:w-auto">
           {incomes.length > 0 && (
             <span className="text-sm text-green-500 font-medium">
               {t.income.monthlyTotal}: {formatCurrency(monthlyTotal)}
@@ -123,7 +123,7 @@ const IncomeManager: React.FC<IncomeManagerProps> = ({
           )}
           <button
             onClick={openAdd}
-            className="px-3 py-1 rounded-md text-sm bg-green-600 hover:bg-green-500 text-white font-medium transition-colors"
+            className="px-2.5 py-1.5 rounded-md text-sm bg-green-600 hover:bg-green-500 text-white font-medium transition-colors leading-tight whitespace-normal text-left"
           >
             + {t.income.addButton}
           </button>
