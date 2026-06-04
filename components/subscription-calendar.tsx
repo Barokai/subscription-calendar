@@ -211,6 +211,12 @@ const SubscriptionCalendar: React.FC = () => {
     });
   };
 
+  // Quick currency formatter used for bar tooltips and other inline needs
+  const fmtAmount = useCallback((amount: number): string => {
+    const currency = subscriptions[0]?.currency.replace("€", "EUR") || "EUR";
+    return amount.toLocaleString(userLocale, { style: "currency", currency });
+  }, [subscriptions, userLocale]);
+
   // Get active subscriptions for the current month (for chart)
   const getActiveSubscriptionsForMonth = (): Subscription[] => {
     const currentMonth = currentDate.getMonth();
@@ -1022,8 +1028,19 @@ const SubscriptionCalendar: React.FC = () => {
         />
 
         <div className="p-3 sm:p-4 md:p-6">
-          {/* Utility bar: theme + language — always in flow, no absolute/overlap */}
+          {/* Utility bar: theme + language + sign-out */}
           <div className="flex justify-end items-center gap-2 mb-3">
+            {!inDemoMode && (
+              <button
+                onClick={handleSignOut}
+                className="h-8 px-2.5 rounded-full border border-gray-600 hover:bg-gray-700 transition-colors flex items-center gap-1.5 text-xs text-gray-300"
+                aria-label={t.nav.signOut}
+                title={t.nav.signOut}
+              >
+                <span>↩</span>
+                <span className="hidden sm:inline">{t.nav.signOut}</span>
+              </button>
+            )}
             <button
               onClick={toggleDarkMode}
               className="w-8 h-8 rounded-full border border-gray-600 hover:bg-gray-700 transition-colors flex items-center justify-center text-base leading-none"
@@ -1236,16 +1253,27 @@ const SubscriptionCalendar: React.FC = () => {
                       />
                     )}
 
-                    {hasBoth && !isGrayed && (
-                      <div className="absolute bottom-0 left-0 right-0 h-1 rounded-b-md overflow-hidden flex" style={{ zIndex: 2 }}>
-                        <div
-                          className="h-full"
-                          style={{
-                            width: `${(fin.incomeTotal / (fin.incomeTotal + fin.expenseTotal) * 100).toFixed(1)}%`,
-                            backgroundColor: 'rgba(34,197,94,0.8)',
-                          }}
-                        />
-                        <div className="h-full flex-1" style={{ backgroundColor: 'rgba(239,68,68,0.8)' }} />
+                    {!isGrayed && (fin.expenseTotal > 0 || fin.incomeTotal > 0) && (
+                      <div className="absolute bottom-0 left-0 right-0 h-1.5 rounded-b-md overflow-hidden flex" style={{ zIndex: 2 }}>
+                        {fin.incomeTotal > 0 && (
+                          <div
+                            className="h-full cursor-default"
+                            title={`+ ${fmtAmount(fin.incomeTotal)}`}
+                            style={{
+                              width: hasBoth
+                                ? `${(fin.incomeTotal / (fin.incomeTotal + fin.expenseTotal) * 100).toFixed(1)}%`
+                                : '100%',
+                              backgroundColor: 'rgba(34,197,94,0.85)',
+                            }}
+                          />
+                        )}
+                        {fin.expenseTotal > 0 && (
+                          <div
+                            className="h-full flex-1 cursor-default"
+                            title={`− ${fmtAmount(fin.expenseTotal)}`}
+                            style={{ backgroundColor: 'rgba(239,68,68,0.85)' }}
+                          />
+                        )}
                       </div>
                     )}
                   </div>
