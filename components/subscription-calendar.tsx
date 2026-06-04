@@ -699,19 +699,7 @@ const SubscriptionCalendar: React.FC = () => {
 
   return (
     <div className="flex justify-center items-start min-h-screen py-2 sm:py-4">
-      <div className={`max-w-[1700px] w-full mx-auto ${isDarkMode ? "bg-gray-900 text-white" : "bg-white text-gray-800"} rounded-lg shadow-lg relative`}>
-        <div className="absolute top-3 right-3 z-20 flex items-center gap-2">
-          <button
-            onClick={toggleDarkMode}
-            className="w-9 h-9 rounded-full border border-gray-600 hover:bg-gray-700 transition-colors flex items-center justify-center"
-            aria-label={isDarkMode ? t.nav.switchToLightMode : t.nav.switchToDarkMode}
-            title={isDarkMode ? t.nav.switchToLightMode : t.nav.switchToDarkMode}
-          >
-            {isDarkMode ? "☀️" : "🌙"}
-          </button>
-          <LanguageSwitcher isDarkMode={isDarkMode} />
-        </div>
-
+      <div className={`max-w-[1700px] w-full mx-auto ${isDarkMode ? "bg-gray-900 text-white" : "bg-white text-gray-800"} rounded-lg shadow-lg`}>
         {pendingDayUpdate && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60 p-4">
             <div className={`w-full max-w-md rounded-xl shadow-2xl p-5 ${isDarkMode ? "bg-gray-900 text-white" : "bg-white text-gray-800"}`}>
@@ -951,7 +939,20 @@ const SubscriptionCalendar: React.FC = () => {
           onClose={() => setShowSpendingChart(false)}
         />
 
-        <div className="p-3 sm:p-4 md:p-6 pt-14 sm:pt-12">
+        <div className="p-3 sm:p-4 md:p-6">
+          {/* Utility bar: theme + language — always in flow, no absolute/overlap */}
+          <div className="flex justify-end items-center gap-2 mb-3">
+            <button
+              onClick={toggleDarkMode}
+              className="w-8 h-8 rounded-full border border-gray-600 hover:bg-gray-700 transition-colors flex items-center justify-center text-base leading-none"
+              aria-label={isDarkMode ? t.nav.switchToLightMode : t.nav.switchToDarkMode}
+              title={isDarkMode ? t.nav.switchToLightMode : t.nav.switchToDarkMode}
+            >
+              {isDarkMode ? "☀️" : "🌙"}
+            </button>
+            <LanguageSwitcher isDarkMode={isDarkMode} />
+          </div>
+
           <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center mb-5 gap-4">
             <div className="flex items-center">
               <button
