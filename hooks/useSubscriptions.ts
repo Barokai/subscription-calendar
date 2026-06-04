@@ -15,7 +15,11 @@ import {
   getPreviousIsoDate,
 } from "@/lib/subscription-versioning";
 
-export function useSubscriptions(demoMode: boolean, mockData: Subscription[]) {
+export function useSubscriptions(
+  demoMode: boolean,
+  mockData: Subscription[],
+  currentUserId: string | null
+) {
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -101,7 +105,9 @@ export function useSubscriptions(demoMode: boolean, mockData: Subscription[]) {
       return;
     }
 
-    const current = subscriptionsRef.current;
+    const current = subscriptionsRef.current.filter((subscription) =>
+      currentUserId ? subscription.userId === currentUserId : false
+    );
     const sameStartVersion = findSubscriptionWithSameStartDate(current, input);
 
     if (sameStartVersion) {
