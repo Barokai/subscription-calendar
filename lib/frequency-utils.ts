@@ -22,6 +22,8 @@ export function isPaymentInMonth(
   }
 
   switch (frequency) {
+    case "once":
+      return currentYear === startYear && currentMonth === startMonth;
     case "yearly":
       return currentMonth === startMonth && totalMonthsDiff % 12 === 0;
     case "quarterly":
