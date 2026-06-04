@@ -13,6 +13,8 @@ export const de: Locale = {
     monthlySpend: "Monatliche Ausgaben",
     addSubscriptionButton: "Abonnement hinzufügen",
     importFromCsv: "CSV importieren",
+    resetData: "Daten zurücksetzen",
+    resetDemoData: "Demo-Daten zurücksetzen",
     switchToDarkMode: "Dunkelmodus aktivieren",
     switchToLightMode: "Hellmodus aktivieren",
     enterDemoMode: "Demo-Modus starten",
@@ -32,6 +34,17 @@ export const de: Locale = {
     dayUpdateCancel: "Abbrechen",
     dayUpdateConfirm: "Tag aktualisieren",
     dayUpdateFailed: "Der Abbuchungstag konnte nicht aktualisiert werden",
+    resetTitle: "Alles zurücksetzen?",
+    resetDemoPrompt:
+      "Dadurch werden die Demo-Daten neu geladen und alle lokalen Änderungen verworfen.",
+    resetLivePrompt:
+      "Dadurch werden alle Abonnements und Einkommensquellen aus deinem Konto gelöscht.",
+    resetSubscriptionsLabel: "Abonnements",
+    resetIncomeLabel: "Einkommensquellen",
+    resetCancel: "Abbrechen",
+    resetConfirm: "Jetzt zurücksetzen",
+    resettingLabel: "Zurücksetzen…",
+    resetFailed: "Daten konnten nicht zurückgesetzt werden",
   },
   importModal: {
     uploadTitle: "Abonnements importieren",

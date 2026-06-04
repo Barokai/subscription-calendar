@@ -59,6 +59,9 @@ const SubscriptionCalendar: React.FC = () => {
   const [dropTargetDayKey, setDropTargetDayKey] = useState<string | null>(null);
   const [pendingDayUpdate, setPendingDayUpdate] = useState<{ subscription: Subscription; targetDay: number } | null>(null);
   const [dayUpdateError, setDayUpdateError] = useState<string | null>(null);
+  const [showResetConfirm, setShowResetConfirm] = useState<boolean>(false);
+  const [resettingData, setResettingData] = useState<boolean>(false);
+  const [resetError, setResetError] = useState<string | null>(null);
   const [expandedDayIndexes, setExpandedDayIndexes] = useState<Set<string>>(new Set());
   const [selectedDay, setSelectedDay] = useState<{
     day: number; month: number; year: number; subscriptions: Subscription[];
@@ -540,6 +543,42 @@ const SubscriptionCalendar: React.FC = () => {
     }
   };
 
+  const confirmResetData = async (): Promise<void> => {
+    try {
+      setResettingData(true);
+      setResetError(null);
+
+      if (inDemoMode) {
+        window.location.reload();
+        return;
+      }
+
+      await Promise.all([
+        ...subscriptions.map((subscription) => remove(subscription.id)),
+        ...incomes.map((income) => removeIncome(income.id)),
+      ]);
+
+      setShowResetConfirm(false);
+      setSelectedSubscription(null);
+      setHoveredSubscription(null);
+      setDraggedSubscription(null);
+      setDropTargetDayKey(null);
+      setPendingDayUpdate(null);
+      setDayUpdateError(null);
+      setSelectedDay(null);
+      setExpandedDayIndexes(new Set());
+      setShowSpendingChart(false);
+      setShowAddForm(false);
+      setEditingSubscription(null);
+      setShowImport(false);
+      setCurrentDate(new Date());
+    } catch (err) {
+      setResetError(err instanceof Error ? err.message : t.calendar.resetFailed);
+    } finally {
+      setResettingData(false);
+    }
+  };
+
   // Function to toggle expansion state of a calendar day
   const toggleDayExpansion = (dayKey: string) => {
     const newExpandedDays = new Set(expandedDayIndexes);
@@ -665,6 +704,65 @@ const SubscriptionCalendar: React.FC = () => {
                   className="flex-1 py-2 rounded-md text-sm bg-blue-600 hover:bg-blue-500 text-white font-medium transition-colors"
                 >
                   {t.calendar.dayUpdateConfirm}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {showResetConfirm && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60 p-4">
+            <div className={`w-full max-w-md rounded-xl shadow-2xl p-5 ${isDarkMode ? "bg-gray-900 text-white" : "bg-white text-gray-800"}`}>
+              <div className="flex items-start justify-between gap-3 mb-4">
+                <div>
+                  <h2 className="text-lg font-bold">{t.calendar.resetTitle}</h2>
+                  <p className={`text-sm mt-1 ${isDarkMode ? "text-gray-400" : "text-gray-500"}`}>
+                    {inDemoMode ? t.calendar.resetDemoPrompt : t.calendar.resetLivePrompt}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowResetConfirm(false)}
+                  className="text-gray-400 hover:text-gray-200"
+                  aria-label={t.calendar.resetCancel}
+                >
+                  ✕
+                </button>
+              </div>
+
+              <div className={`rounded-lg border p-4 ${isDarkMode ? "border-gray-700 bg-gray-800" : "border-gray-200 bg-gray-50"}`}>
+                <div className="space-y-2 text-sm">
+                  <div className="flex items-center justify-between gap-3">
+                    <span className={isDarkMode ? "text-gray-300" : "text-gray-600"}>{t.calendar.resetSubscriptionsLabel}</span>
+                    <span className="font-mono">{subscriptions.length} → 0</span>
+                  </div>
+                  <div className="flex items-center justify-between gap-3">
+                    <span className={isDarkMode ? "text-gray-300" : "text-gray-600"}>{t.calendar.resetIncomeLabel}</span>
+                    <span className="font-mono">{incomes.length} → 0</span>
+                  </div>
+                </div>
+              </div>
+
+              {resetError && (
+                <p className="mt-3 text-sm text-red-400">{resetError}</p>
+              )}
+
+              <div className="mt-4 flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowResetConfirm(false)}
+                  className="flex-1 py-2 rounded-md text-sm border border-gray-600 hover:bg-gray-700 transition-colors"
+                  disabled={resettingData}
+                >
+                  {t.calendar.resetCancel}
+                </button>
+                <button
+                  type="button"
+                  onClick={confirmResetData}
+                  className="flex-1 py-2 rounded-md text-sm bg-red-600 hover:bg-red-500 text-white font-medium transition-colors disabled:opacity-50"
+                  disabled={resettingData}
+                >
+                  {resettingData ? t.calendar.resettingLabel : t.calendar.resetConfirm}
                 </button>
               </div>
             </div>
@@ -839,6 +937,14 @@ const SubscriptionCalendar: React.FC = () => {
                     ↩
                   </button>
                 )}
+                <button
+                  onClick={() => setShowResetConfirm(true)}
+                  className="p-2 rounded-full hover:bg-gray-700 transition-colors text-xs text-red-400"
+                  aria-label={inDemoMode ? t.nav.resetDemoData : t.nav.resetData}
+                  title={inDemoMode ? t.nav.resetDemoData : t.nav.resetData}
+                >
+                  ↺
+                </button>
                 <LanguageSwitcher isDarkMode={isDarkMode} />
               </div>
             </div>
