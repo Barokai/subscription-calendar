@@ -11,9 +11,11 @@ A visual calendar app to track and manage all your recurring subscriptions in on
 
 - Monthly calendar view of all upcoming payments
 - Add, edit and delete subscriptions in-app (no spreadsheet needed)
+- CSV import for bank/credit-card statements and pivot sheets, including income sources
 - Brand icons auto-resolved via [simple-icons](https://simpleicons.org/) with initials fallback
 - Category grouping (Entertainment, Music, Productivity, …)
 - Monthly spending summary & pie chart
+- Income sources + cash-flow projection
 - Dark/light mode, locale support
 - Google OAuth login — access restricted to an invite-only email allowlist
 - Demo mode for exploring without an account
@@ -76,7 +78,7 @@ You can explore the app with sample data without any Supabase or Google setup:
 http://localhost:3000/?demo=true
 ```
 
-Or click **Try Demo** on the login page. Demo mode uses mock subscription data and disables all write operations.
+Or click **Try Demo** on the login page. Demo mode uses mock subscription and income data and disables all write operations.
 
 ---
 
