@@ -1253,11 +1253,14 @@ const SubscriptionCalendar: React.FC = () => {
               let tintColor: string | undefined;
               if (!isGrayed && (fin.expenseTotal > 0 || fin.incomeTotal > 0)) {
                 const MAX_OPACITY = 0.22;
+                const MIN_OPACITY = 0.06;
                 if (net < 0) {
-                  const intensity = maxExpenseDay > 0 ? Math.min(Math.abs(net) / maxExpenseDay, 1) * MAX_OPACITY : MAX_OPACITY;
+                  const relative = maxExpenseDay > 0 ? Math.min(Math.abs(net) / maxExpenseDay, 1) : 1;
+                  const intensity = MIN_OPACITY + relative * (MAX_OPACITY - MIN_OPACITY);
                   tintColor = `rgba(239,68,68,${intensity.toFixed(3)})`;
                 } else {
-                  const intensity = maxIncomeDay > 0 ? Math.min(net / maxIncomeDay, 1) * MAX_OPACITY : MAX_OPACITY;
+                  const relative = maxIncomeDay > 0 ? Math.min(net / maxIncomeDay, 1) : 1;
+                  const intensity = MIN_OPACITY + relative * (MAX_OPACITY - MIN_OPACITY);
                   tintColor = `rgba(34,197,94,${intensity.toFixed(3)})`;
                 }
               }
