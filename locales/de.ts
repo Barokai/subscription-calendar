@@ -159,6 +159,8 @@ export const de: Locale = {
     annualCostBreakdown: "Jährliche Kostenübersicht",
     costPerFrequency: "{amount}/{frequency}",
     costPerYear: "{amount}/Jahr",
+    frequencyBiweekly: "zweiwöchentlich",
+    frequencyDaily: "täglich",
   },
   trends: {
     title: "Ausgabentrends",

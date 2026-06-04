@@ -155,6 +155,8 @@ export const en = {
     annualCostBreakdown: "Annual cost breakdown",
     costPerFrequency: "{amount}/{frequency}",
     costPerYear: "{amount}/yr",
+    frequencyBiweekly: "biweekly",
+    frequencyDaily: "daily",
   },
   trends: {
     title: "Spending Trends",

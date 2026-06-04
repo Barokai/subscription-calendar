@@ -37,6 +37,18 @@ const YearlyProjection: React.FC<YearlyProjectionProps> = ({
   isDarkMode,
 }) => {
   const { t, tpl } = useI18n();
+  const formatFrequencyLabel = (frequency: string): string => {
+    switch (frequency) {
+      case "monthly": return t.subscriptionForm.frequencyMonthly;
+      case "yearly": return t.subscriptionForm.frequencyYearly;
+      case "quarterly": return t.subscriptionForm.frequencyQuarterly;
+      case "biannually": return t.subscriptionForm.frequencyBiannually;
+      case "weekly": return t.subscriptionForm.frequencyWeekly;
+      case "biweekly": return t.yearlyProjection.frequencyBiweekly;
+      case "daily": return t.yearlyProjection.frequencyDaily;
+      default: return frequency;
+    }
+  };
   const currency = subscriptions.length > 0
     ? subscriptions[0].currency.replace("€", "EUR")
     : "EUR";
@@ -133,14 +145,14 @@ const YearlyProjection: React.FC<YearlyProjectionProps> = ({
             const isFirst = i === 0;
             return (
               <div key={m.label} className="flex-1 flex flex-col items-center gap-0.5">
-                <div className="w-full relative group">
+                <div className="w-full h-16 relative group flex items-end">
                   {/* tooltip */}
                   <div className="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-xs rounded px-1.5 py-0.5 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
                     {fmtExact(m.total)}
                   </div>
                   <div
                     className={`w-full rounded-t-sm transition-all ${isFirst ? "bg-blue-500" : "bg-blue-700"}`}
-                    style={{ height: `${Math.max(pct, 4)}%`, maxHeight: "100%" }}
+                    style={{ height: `${Math.max(pct, 4)}%` }}
                   />
                 </div>
                 <span className={`text-[9px] leading-tight ${muted}`}>{m.label}</span>
@@ -169,7 +181,7 @@ const YearlyProjection: React.FC<YearlyProjectionProps> = ({
                     {tpl(t.yearlyProjection.savingsMessage, { count: subs.length, category: cat, amount: fmt(saveable) })}
                   </p>
                   <p className={`text-xs ${muted}`}>
-                    {subs.map((s) => tpl(t.yearlyProjection.savingsDetail, { name: s.name, amount: fmtExact(s.amount), frequency: s.frequency })).join(" · ")}
+                    {subs.map((s) => tpl(t.yearlyProjection.savingsDetail, { name: s.name, amount: fmtExact(s.amount), frequency: formatFrequencyLabel(s.frequency) })).join(" · ")}
                   </p>
                 </div>
               </div>
@@ -223,7 +235,7 @@ const YearlyProjection: React.FC<YearlyProjectionProps> = ({
                   {sub.category && <span className={`ml-1.5 text-xs ${muted}`}>· {sub.category}</span>}
                 </div>
                 <span className={`text-xs ${muted} whitespace-nowrap text-right`}>
-                  {sub.frequency !== "yearly" ? tpl(t.yearlyProjection.costPerFrequency, { amount: fmtExact(sub.amount), frequency: sub.frequency }) : ""}
+                  {sub.frequency !== "yearly" ? tpl(t.yearlyProjection.costPerFrequency, { amount: fmtExact(sub.amount), frequency: formatFrequencyLabel(sub.frequency) }) : ""}
                 </span>
                 <span className={`text-sm font-medium whitespace-nowrap text-right ${text}`}>{tpl(t.yearlyProjection.costPerYear, { amount: fmt(yearly) })}</span>
                 <div className={`h-1.5 rounded-full overflow-hidden ${isDarkMode ? "bg-gray-700" : "bg-gray-200"}`}>
