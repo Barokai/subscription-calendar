@@ -15,6 +15,7 @@ interface SubscriptionDetailProps {
   onClose?: () => void;
   onEdit?: (sub: Subscription) => void;
   onDelete?: (id: string) => void;
+  readOnlyLabel?: string;
 }
 
 const SubscriptionDetail: React.FC<SubscriptionDetailProps> = ({
@@ -27,6 +28,7 @@ const SubscriptionDetail: React.FC<SubscriptionDetailProps> = ({
   onClose,
   onEdit,
   onDelete,
+  readOnlyLabel,
 }) => {
   useEscapeKey(onClose ?? (() => {}), positionType === "click" && !!onClose);
 
@@ -192,6 +194,11 @@ const SubscriptionDetail: React.FC<SubscriptionDetailProps> = ({
           {renderSubscriptionIcon(subscription.name, subscription.color, "w-full h-full")}
         </div>
         <h3 className="text-lg font-bold">{subscription.name}</h3>
+        {readOnlyLabel && (
+          <span className="ml-2 text-[10px] uppercase tracking-wide text-amber-400 border border-amber-500/40 bg-amber-500/10 px-1.5 py-0.5 rounded">
+            {readOnlyLabel}
+          </span>
+        )}
         <div className="ml-auto text-lg font-bold">
           {subscription.amount.toLocaleString(userLocale, {
             style: "currency",

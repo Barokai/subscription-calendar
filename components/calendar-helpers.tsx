@@ -44,6 +44,8 @@ export const SubscriptionIcons: React.FC<{
     event: React.DragEvent<HTMLDivElement>
   ) => void;
   handleSubscriptionDragEnd: () => void;
+  isSubscriptionEditable: (subscription: Subscription) => boolean;
+  readOnlySuffixLabel: string;
   toggleDayExpansion: (dayKey: string) => void;
 }> = ({
   daySubscriptions,
@@ -54,6 +56,8 @@ export const SubscriptionIcons: React.FC<{
   handleSubscriptionClick,
   handleSubscriptionDragStart,
   handleSubscriptionDragEnd,
+  isSubscriptionEditable,
+  readOnlySuffixLabel,
   toggleDayExpansion,
 }) => {
   const { t, tpl } = useI18n();
@@ -76,11 +80,13 @@ export const SubscriptionIcons: React.FC<{
     <div className={styles.subscriptionsContainer}>
       {/* Create a centered wrapper div for the icons group */}
       <div className="inline-flex items-center">
-        {visibleSubscriptions.map((subscription) => (
+        {visibleSubscriptions.map((subscription) => {
+          const isEditable = isSubscriptionEditable(subscription);
+          return (
           <div
             key={subscription.id}
             data-subscription-icon="true"
-            draggable
+            draggable={isEditable}
             onMouseEnter={(e) => handleSubscriptionHover(subscription, e)}
             onMouseLeave={handleSubscriptionLeave}
             onClick={(e) => {
@@ -88,12 +94,15 @@ export const SubscriptionIcons: React.FC<{
               handleSubscriptionClick(subscription, e);
             }}
             onDragStart={(e) => {
+              if (!isEditable) {
+                return;
+              }
               e.stopPropagation();
               handleSubscriptionDragStart(subscription, e);
             }}
             onDragEnd={handleSubscriptionDragEnd}
-            className={styles.subscriptionIcon}
-            title={subscription.name}
+            className={`${styles.subscriptionIcon} ${isEditable ? "" : "opacity-70 cursor-default"}`}
+            title={isEditable ? subscription.name : `${subscription.name} (${readOnlySuffixLabel})`}
           >
             {renderSubscriptionIcon(
               subscription.name,
@@ -101,7 +110,8 @@ export const SubscriptionIcons: React.FC<{
               "w-full h-full"
             )}
           </div>
-        ))}
+          );
+        })}
 
         {/* Toggle expansion when there are hidden subscriptions */}
         {hasMoreSubscriptions && (

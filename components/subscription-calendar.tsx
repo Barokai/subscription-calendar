@@ -33,11 +33,13 @@ import SubscriptionForm from "./SubscriptionForm";
 import ImportModal from "./ImportModal";
 import IncomeManager from "./IncomeManager";
 import CreditCardManager from "./CreditCardManager";
+import SharingManager from "./SharingManager";
 import CashFlowProjection from "./CashFlowProjection";
 import { createClient } from "@/lib/supabase/client";
 import { useI18n } from "@/lib/i18n";
 import LanguageSwitcher from "./LanguageSwitcher";
 import { useEscapeKey } from "@/hooks/useEscapeKey";
+import { useShares } from "@/hooks/useShares";
 
 interface CalendarDayObject {
   day: number;
@@ -75,10 +77,22 @@ const SubscriptionCalendar: React.FC = () => {
   const [editingSubscription, setEditingSubscription] = useState<Subscription | null>(null);
   const [showImport, setShowImport] = useState<boolean>(false);
   const [lastFetchTime, setLastFetchTime] = useState<Date | undefined>(undefined);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
-  const { subscriptions, loading, error, add, update, remove } = useSubscriptions(inDemoMode, mockSubscriptions);
+  const { subscriptions, loading, error, add, update, remove } = useSubscriptions(inDemoMode, mockSubscriptions, currentUserId);
   const { incomes, add: addIncome, update: updateIncome, remove: removeIncome } = useIncomes(inDemoMode, mockIncomes);
   const { creditCards, add: addCreditCard, update: updateCreditCard, remove: removeCreditCard } = useCreditCards(inDemoMode, mockCreditCards);
+  const { shares, add: addShare, remove: removeShare } = useShares(inDemoMode);
+
+  const isOwnedByCurrentUser = useCallback(
+    (userId: string) => inDemoMode || !currentUserId || userId === currentUserId,
+    [inDemoMode, currentUserId]
+  );
+
+  const ownedSubscriptions = subscriptions.filter((sub) => isOwnedByCurrentUser(sub.userId));
+  const sharedSubscriptions = subscriptions.filter((sub) => !isOwnedByCurrentUser(sub.userId));
+  const ownedIncomes = incomes.filter((income) => isOwnedByCurrentUser(income.userId));
+  const ownedCreditCards = creditCards.filter((card) => isOwnedByCurrentUser(card.userId));
 
   // Load user preferences
   useEffect(() => {
@@ -93,6 +107,26 @@ const SubscriptionCalendar: React.FC = () => {
     };
     init();
   }, []);
+
+  useEffect(() => {
+    const loadCurrentUser = async () => {
+      if (inDemoMode) {
+        setCurrentUserId("demo");
+        return;
+      }
+
+      const supabase = createClient();
+      const { data, error: userError } = await supabase.auth.getUser();
+      if (userError || !data.user) {
+        setCurrentUserId(null);
+        return;
+      }
+
+      setCurrentUserId(data.user.id);
+    };
+
+    void loadCurrentUser();
+  }, [inDemoMode]);
 
   // Track last fetch time for trends display
   useEffect(() => {
@@ -207,6 +241,11 @@ const SubscriptionCalendar: React.FC = () => {
       return sum + (shouldInclude ? sub.amount : 0);
     }, 0);
   };
+
+  const isSubscriptionEditable = useCallback(
+    (subscription: Subscription) => isOwnedByCurrentUser(subscription.userId),
+    [isOwnedByCurrentUser]
+  );
 
   // Calculate total spent since start date, accounting for frequency
   const calculateTotalSpent = (subscription: Subscription): string => {
@@ -475,6 +514,10 @@ const SubscriptionCalendar: React.FC = () => {
     subscription: Subscription,
     event: React.DragEvent<HTMLDivElement>
   ): void => {
+    if (!isSubscriptionEditable(subscription)) {
+      return;
+    }
+
     if (hoverTimeoutRef.current !== null) {
       window.clearTimeout(hoverTimeoutRef.current);
     }
@@ -496,6 +539,10 @@ const SubscriptionCalendar: React.FC = () => {
     dayKey: string
   ): void => {
     if (!draggedSubscription) {
+      return;
+    }
+    if (!isSubscriptionEditable(draggedSubscription)) {
+      handleSubscriptionDragEnd();
       return;
     }
 
@@ -536,6 +583,10 @@ const SubscriptionCalendar: React.FC = () => {
     if (!pendingDayUpdate) {
       return;
     }
+    if (!isSubscriptionEditable(pendingDayUpdate.subscription)) {
+      cancelDayUpdate();
+      return;
+    }
 
     try {
       await update(pendingDayUpdate.subscription.id, {
@@ -560,9 +611,9 @@ const SubscriptionCalendar: React.FC = () => {
         return;
       }
 
-      await Promise.all(subscriptions.map((subscription) => remove(subscription.id)));
-      await Promise.all(incomes.map((income) => removeIncome(income.id)));
-      await Promise.all(creditCards.map((card) => removeCreditCard(card.id)));
+      await Promise.all(ownedSubscriptions.map((subscription) => remove(subscription.id)));
+      await Promise.all(ownedIncomes.map((income) => removeIncome(income.id)));
+      await Promise.all(ownedCreditCards.map((card) => removeCreditCard(card.id)));
 
       setShowResetConfirm(false);
       setSelectedSubscription(null);
@@ -638,7 +689,7 @@ const SubscriptionCalendar: React.FC = () => {
 
   if (error) {
     return (
-      <div className={`p-4 max-w-3xl mx-auto ${isDarkMode ? "bg-gray-900 text-white" : "bg-white text-gray-800"}`}>
+      <div className={`p-4 max-w-[1700px] mx-auto ${isDarkMode ? "bg-gray-900 text-white" : "bg-white text-gray-800"}`}>
         <div className="bg-red-500 text-white p-4 rounded mb-4">{error}</div>
         <button onClick={toggleDemoMode} className="text-xs underline">{t.calendar.errorWithDemoFallback}</button>
       </div>
@@ -646,8 +697,8 @@ const SubscriptionCalendar: React.FC = () => {
   }
 
   return (
-    <div className="flex justify-center items-start min-h-screen py-2">
-      <div className={`max-w-3xl w-full mx-auto ${isDarkMode ? "bg-gray-900 text-white" : "bg-white text-gray-800"} rounded-lg shadow-lg relative`}>
+    <div className="flex justify-center items-start min-h-screen py-2 sm:py-4">
+      <div className={`max-w-[1700px] w-full mx-auto ${isDarkMode ? "bg-gray-900 text-white" : "bg-white text-gray-800"} rounded-lg shadow-lg relative`}>
         {pendingDayUpdate && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60 p-4">
             <div className={`w-full max-w-md rounded-xl shadow-2xl p-5 ${isDarkMode ? "bg-gray-900 text-white" : "bg-white text-gray-800"}`}>
@@ -740,15 +791,15 @@ const SubscriptionCalendar: React.FC = () => {
                 <div className="space-y-2 text-sm">
                   <div className="flex items-center justify-between gap-3">
                     <span className={isDarkMode ? "text-gray-300" : "text-gray-600"}>{t.calendar.resetSubscriptionsLabel}</span>
-                    <span className="font-mono">{subscriptions.length} → 0</span>
+                    <span className="font-mono">{ownedSubscriptions.length} → 0</span>
                   </div>
                   <div className="flex items-center justify-between gap-3">
                     <span className={isDarkMode ? "text-gray-300" : "text-gray-600"}>{t.calendar.resetIncomeLabel}</span>
-                    <span className="font-mono">{incomes.length} → 0</span>
+                    <span className="font-mono">{ownedIncomes.length} → 0</span>
                   </div>
                   <div className="flex items-center justify-between gap-3">
                     <span className={isDarkMode ? "text-gray-300" : "text-gray-600"}>{t.calendar.resetCreditCardsLabel}</span>
-                    <span className="font-mono">{creditCards.length} → 0</span>
+                    <span className="font-mono">{ownedCreditCards.length} → 0</span>
                   </div>
                 </div>
               </div>
@@ -787,11 +838,26 @@ const SubscriptionCalendar: React.FC = () => {
             userLocale={userLocale}
             calculateTotalSpent={calculateTotalSpent}
             positionType="click"
+            readOnlyLabel={!isSubscriptionEditable(selectedSubscription) ? t.calendar.sharedReadOnlyLabel : undefined}
             onClose={() => {
               setSelectedSubscription(null);
             }}
-            onEdit={(sub) => { setEditingSubscription(sub); setSelectedSubscription(null); }}
-            onDelete={async (id) => { await remove(id); setSelectedSubscription(null); }}
+            onEdit={
+              isSubscriptionEditable(selectedSubscription)
+                ? (sub) => {
+                    setEditingSubscription(sub);
+                    setSelectedSubscription(null);
+                  }
+                : undefined
+            }
+            onDelete={
+              isSubscriptionEditable(selectedSubscription)
+                ? async (id) => {
+                    await remove(id);
+                    setSelectedSubscription(null);
+                  }
+                : undefined
+            }
           />
         )}
 
@@ -829,9 +895,9 @@ const SubscriptionCalendar: React.FC = () => {
         {showImport && (
           <ImportModal
             isDarkMode={isDarkMode}
-            existingSubscriptions={subscriptions}
-            existingIncomes={incomes}
-            creditCards={creditCards}
+            existingSubscriptions={ownedSubscriptions}
+            existingIncomes={ownedIncomes}
+            creditCards={ownedCreditCards}
             onImport={async (inputs) => {
               for (const input of inputs) {
                 await add(input);
@@ -872,8 +938,8 @@ const SubscriptionCalendar: React.FC = () => {
           onClose={() => setShowSpendingChart(false)}
         />
 
-        <div className="p-4 md:p-6">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+        <div className="p-3 sm:p-4 md:p-6">
+          <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center mb-5 gap-4">
             <div className="flex items-center">
               <button
                 onClick={() => navigateMonth(-1)}
@@ -892,9 +958,9 @@ const SubscriptionCalendar: React.FC = () => {
               </h1>
             </div>
 
-            <div className="flex items-center w-full sm:w-auto justify-between sm:justify-normal gap-1">
+            <div className="w-full xl:w-auto flex flex-col sm:flex-row sm:items-start gap-3">
               <div
-                className="text-right cursor-pointer group relative"
+                className="text-left sm:text-right cursor-pointer group relative sm:min-w-[220px]"
                 onClick={() => setShowSpendingChart(true)}
                 onMouseEnter={() => window.innerWidth > 768 && setShowSpendingChart(true)}
               >
@@ -905,59 +971,51 @@ const SubscriptionCalendar: React.FC = () => {
                 </div>
               </div>
 
-              <div className="flex items-center ml-2 gap-1">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 w-full sm:w-auto">
                 <button
                   onClick={() => setShowAddForm(true)}
-                  className="p-2 rounded-full bg-blue-600 text-white hover:bg-blue-500 transition-colors"
-                  aria-label={t.nav.addSubscriptionButton}
-                  title={t.nav.addSubscriptionButton}
+                  className="px-3 py-2 rounded-md bg-blue-600 text-white hover:bg-blue-500 transition-colors text-sm font-medium text-left"
                 >
-                  ＋
+                  ➕ {t.nav.addSubscriptionButton}
                 </button>
                 {!inDemoMode && (
                   <button
                     onClick={() => setShowImport(true)}
-                    className="p-2 rounded-full bg-gray-700 text-white hover:bg-gray-600 transition-colors text-sm"
-                    aria-label={t.nav.importFromCsv}
-                    title={t.nav.importFromCsv}
+                    className="px-3 py-2 rounded-md bg-gray-700 text-white hover:bg-gray-600 transition-colors text-sm font-medium text-left"
                   >
-                    ↑
+                    ⬆️ {t.nav.importFromCsv}
                   </button>
                 )}
                 <button
                   onClick={toggleDarkMode}
-                  className="p-2 rounded-full hover:bg-gray-700 transition-colors"
-                  aria-label={isDarkMode ? t.nav.switchToLightMode : t.nav.switchToDarkMode}
+                  className="px-3 py-2 rounded-md border border-gray-600 hover:bg-gray-700 transition-colors text-sm font-medium text-left"
                 >
-                  {isDarkMode ? "☀️" : "🌙"}
+                  {isDarkMode ? `☀️ ${t.nav.switchToLightMode}` : `🌙 ${t.nav.switchToDarkMode}`}
                 </button>
                 <button
                   onClick={toggleDemoMode}
-                  className="p-2 rounded-full hover:bg-gray-700 transition-colors text-xs"
-                  aria-label={inDemoMode ? t.nav.exitDemoMode : t.nav.enterDemoMode}
-                  title={inDemoMode ? t.nav.exitDemoMode : t.nav.demoMode}
+                  className="px-3 py-2 rounded-md border border-gray-600 hover:bg-gray-700 transition-colors text-sm font-medium text-left"
                 >
-                  {inDemoMode ? "🔴" : "🔍"}
+                  {inDemoMode ? `🔴 ${t.nav.exitDemoMode}` : `🔍 ${t.nav.enterDemoMode}`}
                 </button>
                 {!inDemoMode && (
                   <button
                     onClick={handleSignOut}
-                    className="p-2 rounded-full hover:bg-gray-700 transition-colors text-xs text-gray-400"
-                    aria-label={t.nav.signOut}
-                    title={t.nav.signOut}
+                    className="px-3 py-2 rounded-md border border-gray-600 hover:bg-gray-700 transition-colors text-sm font-medium text-left text-gray-200"
                   >
-                    ↩
+                    ↩️ {t.nav.signOut}
                   </button>
                 )}
                 <button
                   onClick={() => setShowResetConfirm(true)}
-                  className="p-2 rounded-full hover:bg-gray-700 transition-colors text-xs text-red-400"
-                  aria-label={inDemoMode ? t.nav.resetDemoData : t.nav.resetData}
-                  title={inDemoMode ? t.nav.resetDemoData : t.nav.resetData}
+                  className="px-3 py-2 rounded-md border border-red-700 hover:bg-red-900 transition-colors text-sm font-medium text-left text-red-300"
                 >
-                  ↺
+                  ↺ {inDemoMode ? t.nav.resetDemoData : t.nav.resetData}
                 </button>
-                <LanguageSwitcher isDarkMode={isDarkMode} />
+                <div className="px-2 py-2 rounded-md border border-gray-600 flex items-center justify-center sm:justify-start gap-2">
+                  <span className="text-xs text-gray-400">{t.nav.languageLabel}</span>
+                  <LanguageSwitcher isDarkMode={isDarkMode} />
+                </div>
               </div>
             </div>
           </div>
@@ -967,6 +1025,12 @@ const SubscriptionCalendar: React.FC = () => {
               <span className="mr-2">🔍</span>
               <span className="text-sm">{t.nav.demoModeActive}</span>
               <button onClick={toggleDemoMode} className="text-xs underline ml-auto">{t.nav.exitDemoLink}</button>
+            </div>
+          )}
+
+          {!inDemoMode && sharedSubscriptions.length > 0 && (
+            <div className="mb-4 p-2 bg-amber-800 bg-opacity-20 border border-amber-600 rounded-md text-amber-300 text-sm">
+              {tpl(t.calendar.sharedReadOnlyInfo, { count: sharedSubscriptions.length })}
             </div>
           )}
 
@@ -1034,6 +1098,8 @@ const SubscriptionCalendar: React.FC = () => {
                         handleSubscriptionClick={handleSubscriptionClick}
                         handleSubscriptionDragStart={handleSubscriptionDragStart}
                         handleSubscriptionDragEnd={handleSubscriptionDragEnd}
+                        isSubscriptionEditable={isSubscriptionEditable}
+                        readOnlySuffixLabel={t.calendar.readOnlySuffix}
                         toggleDayExpansion={toggleDayExpansion}
                       />
                     )}
@@ -1060,7 +1126,7 @@ const SubscriptionCalendar: React.FC = () => {
 
           {/* Income Sources */}
           <IncomeManager
-            incomes={incomes}
+            incomes={ownedIncomes}
             isDarkMode={isDarkMode}
             userLocale={userLocale}
             onAdd={addIncome}
@@ -1069,12 +1135,19 @@ const SubscriptionCalendar: React.FC = () => {
           />
 
           <CreditCardManager
-            creditCards={creditCards}
-            subscriptions={subscriptions}
+            creditCards={ownedCreditCards}
+            subscriptions={ownedSubscriptions}
             isDarkMode={isDarkMode}
             onAdd={addCreditCard}
             onUpdate={updateCreditCard}
             onRemove={removeCreditCard}
+          />
+
+          <SharingManager
+            shares={shares}
+            isDarkMode={isDarkMode}
+            onAdd={async (viewerEmail) => addShare({ viewerEmail })}
+            onRemove={removeShare}
           />
 
           {/* Cash Flow Projection */}
