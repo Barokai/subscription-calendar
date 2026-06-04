@@ -22,7 +22,7 @@ A visual calendar app to track and manage all your recurring subscriptions in on
 - One-time expenses and one-time incomes (single-day entries)
 - Dashboard flow: monthly operations first, strategic yearly insights later
 - Dark/light mode, locale support
-- Google OAuth login — access restricted to an invite-only email allowlist
+- Google OAuth and email/password login — access restricted to an invite-only email allowlist
 - Demo mode for exploring without an account
 
 ## Tech stack
@@ -156,7 +156,9 @@ This creates the `subscriptions`, `incomes`, and `credit_cards` tables, grants t
 
 For existing databases, run targeted incremental scripts from [`supabase/migrations`](supabase/migrations) (for example `2026-06-04-credit-cards-v1.sql`) instead of re-running the full schema blindly.
 
-### Enable Google OAuth
+### Enable authentication providers
+
+#### Google OAuth
 
 Follow the [Supabase Google Auth guide](https://supabase.com/docs/guides/auth/social-login/auth-google), then:
 
@@ -172,6 +174,15 @@ Follow the [Supabase Google Auth guide](https://supabase.com/docs/guides/auth/so
    ```
    https://<your-supabase-project-ref>.supabase.co/auth/v1/callback
    ```
+
+#### Email + password (invite-only)
+
+1. In **Supabase → Authentication → Providers → Email**, enable Email provider.
+2. Disable open self-signup (invite-only flow):
+   - keep **Confirm email** enabled
+   - disable public registrations / self-signups in Auth settings
+3. Add users via **Authentication → Users → Invite user** (or admin create user).
+4. Keep `ALLOWED_EMAILS` in sync with invited addresses for the app-level allowlist check.
 
 ---
 
@@ -197,6 +208,9 @@ Set these environment variables in **Netlify → Site configuration → Environm
 
 **Access denied page after login**
 > Your Google account email is not in `ALLOWED_EMAILS`. Add it and redeploy.
+
+**Email/password login keeps failing**
+> Make sure the Email provider is enabled, self-signups are disabled (invite-only), and the user email is listed in `ALLOWED_EMAILS`.
 
 ---
 
