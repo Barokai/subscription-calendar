@@ -3,6 +3,7 @@ import React, {
   useEffect,
   useCallback,
   useRef,
+  useMemo,
   MouseEvent,
 } from "react";
 import SubscriptionDetail from "./subscription-detail";
@@ -23,7 +24,7 @@ import MonthlySummaryTable from "./monthly-summary-table";
 import SubscriptionTrends from "./subscription-trends";
 import YearlyProjection from "./YearlyProjection";
 import DaySubscriptionsOverlay from "./day-subscriptions-overlay";
-import { getSubscriptionsForDay, SubscriptionIcons } from "./calendar-helpers";
+import { getSubscriptionsForDay, getIncomesForDay, DayIcons } from "./calendar-helpers";
 import styles from "../styles/calendar.module.css";
 import SpendingChart from "./spending-chart";
 import IncomeChart from "./income-chart";
@@ -274,6 +275,46 @@ const SubscriptionCalendar: React.FC = () => {
     (subscription: Subscription) => isOwnedByCurrentUser(subscription.userId),
     [isOwnedByCurrentUser]
   );
+
+  const dayFinancials = useMemo(() => {
+    const month = currentDate.getMonth();
+    const year = currentDate.getFullYear();
+    const map: Record<number, { expenseTotal: number; incomeTotal: number }> = {};
+
+    subscriptions.forEach((sub) => {
+      const start = parseDate(sub.startDate, userLocale);
+      if (isPaymentInMonth(sub.frequency, start, month, year)) {
+        const d = sub.dayOfMonth;
+        if (!map[d]) map[d] = { expenseTotal: 0, incomeTotal: 0 };
+        map[d].expenseTotal += sub.amount;
+      }
+    });
+
+    incomes.forEach((inc) => {
+      const start = parseDate(inc.startDate, userLocale);
+      const startMonth = start.getMonth();
+      const startYear = start.getFullYear();
+      if (year < startYear || (year === startYear && month < startMonth)) return;
+      if (inc.endDate) {
+        const end = parseDate(inc.endDate, userLocale);
+        if (year > end.getFullYear() || (year === end.getFullYear() && month > end.getMonth())) return;
+      }
+      const d = inc.dayOfMonth;
+      if (!map[d]) map[d] = { expenseTotal: 0, incomeTotal: 0 };
+      map[d].incomeTotal += inc.amount;
+    });
+
+    return map;
+  }, [subscriptions, incomes, currentDate, userLocale]);
+
+  const { maxExpenseDay, maxIncomeDay } = useMemo(() => {
+    let maxE = 0, maxI = 0;
+    Object.values(dayFinancials).forEach(({ expenseTotal, incomeTotal }) => {
+      if (expenseTotal > maxE) maxE = expenseTotal;
+      if (incomeTotal > maxI) maxI = incomeTotal;
+    });
+    return { maxExpenseDay: maxE, maxIncomeDay: maxI };
+  }, [dayFinancials]);
 
   // Calculate total spent since start date, accounting for frequency
   const calculateTotalSpent = (subscription: Subscription): string => {
@@ -1110,7 +1151,32 @@ const SubscriptionCalendar: React.FC = () => {
                     currentDate.getFullYear()
                   )
                 : [];
+              const dayIncomes = dayObj.isCurrentMonth
+                ? getIncomesForDay(
+                    dayObj.day,
+                    incomes,
+                    userLocale,
+                    currentDate.getMonth(),
+                    currentDate.getFullYear()
+                  )
+                : [];
               const isGrayed = !dayObj.isCurrentMonth;
+
+              const fin = dayFinancials[dayObj.day] ?? { expenseTotal: 0, incomeTotal: 0 };
+              const net = fin.incomeTotal - fin.expenseTotal;
+              const hasBoth = fin.incomeTotal > 0 && fin.expenseTotal > 0;
+
+              let tintColor: string | undefined;
+              if (!isGrayed && (fin.expenseTotal > 0 || fin.incomeTotal > 0)) {
+                const MAX_OPACITY = 0.22;
+                if (net < 0) {
+                  const intensity = maxExpenseDay > 0 ? Math.min(Math.abs(net) / maxExpenseDay, 1) * MAX_OPACITY : MAX_OPACITY;
+                  tintColor = `rgba(239,68,68,${intensity.toFixed(3)})`;
+                } else {
+                  const intensity = maxIncomeDay > 0 ? Math.min(net / maxIncomeDay, 1) * MAX_OPACITY : MAX_OPACITY;
+                  tintColor = `rgba(34,197,94,${intensity.toFixed(3)})`;
+                }
+              }
 
               return (
                 <div
@@ -1141,14 +1207,21 @@ const SubscriptionCalendar: React.FC = () => {
                   }}
                 >
                   <div className={styles.calendarDayContent}>
+                    {tintColor && (
+                      <div
+                        className="absolute inset-0 rounded-md pointer-events-none"
+                        style={{ backgroundColor: tintColor, zIndex: 0 }}
+                      />
+                    )}
+
                     <div className="text-right font-medium mb-1">
                       {dayObj.day}
                     </div>
 
-                    {/* Use the extracted SubscriptionIcons component */}
-                    {daySubscriptions.length > 0 && (
-                      <SubscriptionIcons
+                    {(daySubscriptions.length > 0 || dayIncomes.length > 0) && (
+                      <DayIcons
                         daySubscriptions={daySubscriptions}
+                        dayIncomes={dayIncomes}
                         expandedDays={expandedDayIndexes}
                         dayKey={dayKey}
                         handleSubscriptionHover={handleSubscriptionHover}
@@ -1160,6 +1233,19 @@ const SubscriptionCalendar: React.FC = () => {
                         readOnlySuffixLabel={t.calendar.readOnlySuffix}
                         toggleDayExpansion={toggleDayExpansion}
                       />
+                    )}
+
+                    {hasBoth && !isGrayed && (
+                      <div className="absolute bottom-0 left-0 right-0 h-1 rounded-b-md overflow-hidden flex" style={{ zIndex: 2 }}>
+                        <div
+                          className="h-full"
+                          style={{
+                            width: `${(fin.incomeTotal / (fin.incomeTotal + fin.expenseTotal) * 100).toFixed(1)}%`,
+                            backgroundColor: 'rgba(34,197,94,0.8)',
+                          }}
+                        />
+                        <div className="h-full flex-1" style={{ backgroundColor: 'rgba(239,68,68,0.8)' }} />
+                      </div>
                     )}
                   </div>
                 </div>

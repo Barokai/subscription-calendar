@@ -60,6 +60,7 @@ export const en = {
     sharedReadOnlyInfo: "{count} shared subscription entries are visible in read-only mode.",
     tabOperations: "Operations",
     tabInsights: "Insights",
+    incomeIconTitle: "{name} — income",
   },
   importModal: {
     uploadTitle: "Import subscriptions or income",
