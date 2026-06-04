@@ -216,6 +216,17 @@ export const en = {
     expensesLabel: "Expenses",
     incomeLabel: "Income",
   },
+  subscriptionDetail: {
+    billingDay: "Day {day}",
+    frequency: "Frequency: {freq}",
+    nextPayment: "Next: {date}",
+    since: "Since {date}",
+    category: "Category",
+    totalSpent: "Total spent",
+    editButton: "Edit",
+    deleteButton: "Delete",
+    deleteConfirm: "Delete \"{name}\"?",
+  },
   income: {
     title: "Income Sources",
     addButton: "Add income",
