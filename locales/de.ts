@@ -18,6 +18,7 @@ export const de: Locale = {
   },
   nav: {
     monthlySpend: "Monatliche Ausgaben",
+    monthlyIncome: "Monatliches Einkommen",
     addSubscriptionButton: "Abonnement hinzufügen",
     importFromCsv: "CSV importieren",
     resetData: "Daten zurücksetzen",
@@ -289,5 +290,18 @@ export const de: Locale = {
     runningBalanceHeader: "Laufendes Guthaben",
     negativeWarning: "Guthaben wird negativ in {month}",
     projectedLabel: "{month} (Prognose)",
+  },
+  spendingChart: {
+    title: "Monatliche Ausgaben",
+    totalLabel: "Gesamt",
+    closeButton: "Schließen",
+    viewByCategory: "Nach Kategorie",
+    viewByItem: "Einzeln",
+    uncategorized: "Sonstige",
+    categoryItemCount: "{count} Einträge",
+  },
+  incomeChart: {
+    title: "Monatliches Einkommen",
+    closeButton: "Schließen",
   },
 };

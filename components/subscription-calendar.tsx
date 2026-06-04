@@ -26,6 +26,7 @@ import DaySubscriptionsOverlay from "./day-subscriptions-overlay";
 import { getSubscriptionsForDay, SubscriptionIcons } from "./calendar-helpers";
 import styles from "../styles/calendar.module.css";
 import SpendingChart from "./spending-chart";
+import IncomeChart from "./income-chart";
 import { useSubscriptions } from "@/hooks/useSubscriptions";
 import { useIncomes } from "@/hooks/useIncomes";
 import { useCreditCards } from "@/hooks/useCreditCards";
@@ -73,6 +74,7 @@ const SubscriptionCalendar: React.FC = () => {
   } | null>(null);
   const [isMobile, setIsMobile] = useState<boolean>(false);
   const [showSpendingChart, setShowSpendingChart] = useState<boolean>(false);
+  const [showIncomeChart, setShowIncomeChart] = useState<boolean>(false);
   const [showAddForm, setShowAddForm] = useState<boolean>(false);
   const [editingSubscription, setEditingSubscription] = useState<Subscription | null>(null);
   const [showImport, setShowImport] = useState<boolean>(false);
@@ -241,6 +243,31 @@ const SubscriptionCalendar: React.FC = () => {
       );
       return sum + (shouldInclude ? sub.amount : 0);
     }, 0);
+  };
+
+  // Get active income sources for the current month
+  const getActiveIncomesForMonth = () => {
+    const monthIndex = currentDate.getMonth();
+    const monthNumber = monthIndex + 1;
+    const year = currentDate.getFullYear();
+    return ownedIncomes.filter((inc) => {
+      const start = new Date(inc.startDate);
+      const end = inc.endDate ? new Date(inc.endDate) : null;
+      return (
+        (start.getFullYear() < year || (start.getFullYear() === year && start.getMonth() + 1 <= monthNumber)) &&
+        (!end || end.getFullYear() > year || (end.getFullYear() === year && end.getMonth() + 1 >= monthNumber))
+      );
+    });
+  };
+
+  const calculateRawMonthlyIncomeTotal = (): number => {
+    return getActiveIncomesForMonth().reduce((sum, inc) => sum + inc.amount, 0);
+  };
+
+  const calculateMonthlyIncomeTotal = (): string => {
+    const total = calculateRawMonthlyIncomeTotal();
+    const currency = ownedIncomes[0]?.currency || "EUR";
+    return total.toLocaleString(userLocale, { style: "currency", currency });
   };
 
   const isSubscriptionEditable = useCallback(
@@ -939,6 +966,16 @@ const SubscriptionCalendar: React.FC = () => {
           onClose={() => setShowSpendingChart(false)}
         />
 
+        {/* Income Chart */}
+        <IncomeChart
+          incomes={getActiveIncomesForMonth()}
+          totalIncome={calculateRawMonthlyIncomeTotal()}
+          userLocale={userLocale}
+          isDarkMode={isDarkMode}
+          isVisible={showIncomeChart}
+          onClose={() => setShowIncomeChart(false)}
+        />
+
         <div className="p-3 sm:p-4 md:p-6">
           {/* Utility bar: theme + language — always in flow, no absolute/overlap */}
           <div className="flex justify-end items-center gap-2 mb-3">
@@ -981,6 +1018,18 @@ const SubscriptionCalendar: React.FC = () => {
                 <div className="text-xs sm:text-sm text-gray-400">{t.nav.monthlySpend}</div>
                 <div className="text-lg sm:text-2xl font-bold group-hover:text-blue-500 transition-colors">
                   {calculateMonthlyTotal()}
+                  <span className="hidden group-hover:inline-block ml-2 text-xs">📊</span>
+                </div>
+              </div>
+
+              <div
+                className="text-left sm:text-right cursor-pointer group relative sm:min-w-[180px]"
+                onClick={() => setShowIncomeChart(true)}
+                onMouseEnter={() => window.innerWidth > 768 && setShowIncomeChart(true)}
+              >
+                <div className="text-xs sm:text-sm text-gray-400">{t.nav.monthlyIncome}</div>
+                <div className="text-lg sm:text-2xl font-bold text-green-400 group-hover:text-green-300 transition-colors">
+                  {calculateMonthlyIncomeTotal()}
                   <span className="hidden group-hover:inline-block ml-2 text-xs">📊</span>
                 </div>
               </div>

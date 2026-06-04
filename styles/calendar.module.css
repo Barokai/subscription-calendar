@@ -6,18 +6,17 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-right: 4px;
   font-size: 12px;
   color: white;
   cursor: pointer;
-  margin: 0.125rem;
   font-weight: 700;
   transition: transform 0.15s ease;
-  /* Allow slight overlap between icons */
-  margin-left: -0.5rem;
+  /* Slight overlap — reduced from -0.5rem to keep icons readable */
+  margin: 0.1rem 0.1rem 0.1rem -0.2rem;
+  flex-shrink: 0;
   position: relative;
   z-index: 1;
-  overflow: hidden; /* Changed from overflow: visible to hidden to avoid svg extending outside circle */
+  overflow: hidden;
 }
 
 /* Create the colored background that stays behind */
@@ -29,7 +28,7 @@
   right: 0;
   bottom: 0;
   border-radius: 50%;
-  background: inherit; /* Inherit the background color from parent */
+  background: inherit;
   z-index: 1;
 }
 
@@ -52,22 +51,20 @@
 }
 
 .moreButton {
-  margin: 0.125rem;
-  width: 1.25rem;
-  height: 1.25rem;
+  flex-shrink: 0;
+  margin: 0.1rem 0.1rem 0.1rem -0.2rem;
+  width: 1.35rem;
+  height: 1.35rem;
   border-radius: 9999px;
   display: flex;
   align-items: center;
   justify-content: center;
   color: white;
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   font-weight: 700;
   cursor: pointer;
   background-color: rgba(156, 163, 175, 1);
   transition: background-color 0.2s ease;
-  /* Match the overlapping style of subscription icons */
-  margin-left: -0.5rem;
-  margin-right: 0.5rem;
   border: 1px solid rgba(255, 255, 255, 0.3);
   z-index: 1;
 }
@@ -77,21 +74,49 @@
   z-index: 5;
 }
 
-/* Mobile optimization */
+/* Mobile: smaller icons */
 @media (max-width: 640px) {
-  .subscriptionIcon, .moreButton {
+  .subscriptionIcon {
     width: 1rem;
     height: 1rem;
-    font-size: 0.65rem;
-    margin: 0.1rem;
-    /* Even more overlap on mobile */
-    margin-left: -0.3rem;
-    margin-right: 0.15rem;
+    font-size: 0.6rem;
+    margin: 0.08rem 0.08rem 0.08rem -0.2rem;
   }
-  
+
   .subscriptionIcon:first-child {
-    margin-left: 0.1rem;
+    margin-left: 0.08rem;
   }
+
+  .moreButton {
+    width: 1rem;
+    height: 1rem;
+    font-size: 0.6rem;
+    margin: 0.08rem 0.08rem 0.08rem -0.2rem;
+  }
+}
+
+/* Tablet: slightly larger */
+@media (min-width: 768px) {
+  .subscriptionIcon { width: 34px; height: 34px; font-size: 13px; }
+  .moreButton { width: 1.4rem; height: 1.4rem; font-size: 0.72rem; }
+}
+
+/* Desktop */
+@media (min-width: 1024px) {
+  .subscriptionIcon { width: 38px; height: 38px; font-size: 14px; }
+  .moreButton { width: 1.5rem; height: 1.5rem; font-size: 0.75rem; }
+}
+
+/* Large desktop */
+@media (min-width: 1280px) {
+  .subscriptionIcon { width: 42px; height: 42px; font-size: 15px; }
+  .moreButton { width: 1.6rem; height: 1.6rem; font-size: 0.8rem; }
+}
+
+/* Ultra-wide */
+@media (min-width: 1536px) {
+  .subscriptionIcon { width: 46px; height: 46px; font-size: 16px; }
+  .moreButton { width: 1.75rem; height: 1.75rem; font-size: 0.85rem; }
 }
 
 /* Ensure calendar days maintain a good aspect ratio */
@@ -107,13 +132,15 @@
   display: flex;
   flex-direction: column;
   padding: 0.5rem;
+  overflow: hidden; /* clip icon overflow at cell boundary */
 }
 
 .subscriptionsContainer {
   flex-grow: 1;
   display: flex;
   flex-wrap: wrap;
-  align-items: center; /* Vertically center icons */
-  justify-content: center; /* Horizontally center icons */
-  margin: 0 auto; /* Additional centering */
+  align-items: flex-start;
+  justify-content: center;
+  min-height: 0;
+  overflow: hidden;
 }
