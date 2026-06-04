@@ -24,6 +24,14 @@ export const de: Locale = {
   },
   calendar: {
     errorWithDemoFallback: "Stattdessen Demo-Modus verwenden",
+    dayUpdateTitle: "Abbuchungstag aktualisieren?",
+    dayUpdatePrompt: "Bist du sicher, dass du den Tag auf {day} ändern möchtest?",
+    dayUpdateDiffLabel: "Änderungsvorschau",
+    dayUpdateOldLabel: "Alt",
+    dayUpdateNewLabel: "Neu",
+    dayUpdateCancel: "Abbrechen",
+    dayUpdateConfirm: "Tag aktualisieren",
+    dayUpdateFailed: "Der Abbuchungstag konnte nicht aktualisiert werden",
   },
   importModal: {
     uploadTitle: "Abonnements importieren",
@@ -131,6 +139,8 @@ export const de: Locale = {
     savingsMessage:
       "{count} {category} Fixkosten — du könntest {amount}/Jahr sparen",
     savingsDetail: "{name} ({amount}/{frequency})",
+    categoryAnnualCostBreakdown: "Jährliche Kostenübersicht für gefundene Kategorien",
+    categoryRecurringCostsLabel: "Fixkosten",
     annualCostBreakdown: "Jährliche Kostenübersicht",
     costPerFrequency: "{amount}/{frequency}",
     costPerYear: "{amount}/Jahr",
