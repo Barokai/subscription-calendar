@@ -47,9 +47,9 @@ export const de: Locale = {
     resetFailed: "Daten konnten nicht zurückgesetzt werden",
   },
   importModal: {
-    uploadTitle: "Abonnements importieren",
+    uploadTitle: "Abonnements oder Einkommen importieren",
     uploadInstructions:
-      "Lade eine CSV-Datei hoch — entweder einen Bank-/Kreditkartenausug oder eine Pivot-Tabelle (Zeilen = Abonnements, Spalten = Monate).",
+      "Lade eine CSV-Datei hoch — entweder einen Bank-/Kreditkartenausug oder eine Pivot-Tabelle. Pivot-Tabellen können als Abonnements oder Einkommensquellen importiert werden.",
     dragDropText: "Drag & Drop oder zum Auswählen klicken",
     fileFormats: ".csv oder .txt",
     supportedFormatsTitle: "Unterstützte Formate",

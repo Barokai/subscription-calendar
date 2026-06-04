@@ -45,9 +45,9 @@ export const en = {
     resetFailed: "Failed to reset data",
   },
   importModal: {
-    uploadTitle: "Import subscriptions",
+    uploadTitle: "Import subscriptions or income",
     uploadInstructions:
-      "Upload a CSV file — either a bank / credit card statement or a pivot sheet (rows = subscriptions, columns = months).",
+      "Upload a CSV file — either a bank / credit card statement or a pivot sheet. Pivot sheets can be imported as subscriptions or income sources.",
     dragDropText: "Drag & drop or click to select",
     fileFormats: ".csv or .txt",
     supportedFormatsTitle: "Supported formats",
