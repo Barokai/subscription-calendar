@@ -43,7 +43,8 @@ const DaySubscriptionsOverlay: React.FC<DaySubscriptionsOverlayProps> = ({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black bg-opacity-50"
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center"
+      style={{ background: 'linear-gradient(to bottom, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0.55) 100%)', backdropFilter: 'blur(2px)' }}
       onClick={onClose}
     >
       <div

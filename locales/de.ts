@@ -220,6 +220,17 @@ export const de: Locale = {
     expensesLabel: "Ausgaben",
     incomeLabel: "Einkommen",
   },
+  subscriptionDetail: {
+    billingDay: "Am {day}.",
+    frequency: "Häufigkeit: {freq}",
+    nextPayment: "Nächste: {date}",
+    since: "Seit {date}",
+    category: "Kategorie",
+    totalSpent: "Ausgaben gesamt",
+    editButton: "Bearbeiten",
+    deleteButton: "Löschen",
+    deleteConfirm: "\"{name}\" löschen?",
+  },
   income: {
     title: "Einkommensquellen",
     addButton: "Einkommen hinzufügen",

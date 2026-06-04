@@ -31,7 +31,7 @@ const SubscriptionDetail: React.FC<SubscriptionDetailProps> = ({
   onDelete,
   readOnlyLabel,
 }) => {
-  const { t } = useI18n();
+  const { t, tpl } = useI18n();
   useEscapeKey(onClose ?? (() => {}), positionType === "click" && !!onClose);
 
   if (!subscription) {
@@ -152,13 +152,6 @@ const SubscriptionDetail: React.FC<SubscriptionDetailProps> = ({
     day: "2-digit",
   });
 
-  // Format frequency for display
-  const formatFrequency = (frequency: string): string => {
-    const capitalizedFrequency =
-      frequency.charAt(0).toUpperCase() + frequency.slice(1);
-    return capitalizedFrequency;
-  };
-
   // Determine transform based on position type - moved hover up by 20px
   let transform;
   if (positionType === "hover") {
@@ -167,6 +160,18 @@ const SubscriptionDetail: React.FC<SubscriptionDetailProps> = ({
     // click
     transform = "translate(-50%, -120%)"; // Default to above for click too
   }
+
+  // Map frequency to localized label using existing subscriptionForm keys
+  const localizeFrequency = (freq: string): string => {
+    const map: Record<string, string> = {
+      monthly: t.subscriptionForm.frequencyMonthly,
+      yearly: t.subscriptionForm.frequencyYearly,
+      quarterly: t.subscriptionForm.frequencyQuarterly,
+      biannually: t.subscriptionForm.frequencyBiannually,
+      weekly: t.subscriptionForm.frequencyWeekly,
+    };
+    return map[freq.toLowerCase()] ?? freq;
+  };
 
   return (
     <div
@@ -211,34 +216,16 @@ const SubscriptionDetail: React.FC<SubscriptionDetailProps> = ({
 
       <div className="space-y-2 mb-2 text-sm">
         <div className="flex justify-between">
-          <span>
-            Every {subscription.dayOfMonth}
-            {subscription.dayOfMonth === 1
-              ? "st"
-              : subscription.dayOfMonth === 2
-              ? "nd"
-              : subscription.dayOfMonth === 3
-              ? "rd"
-              : subscription.dayOfMonth >= 21 &&
-                subscription.dayOfMonth % 10 === 1
-              ? "st"
-              : subscription.dayOfMonth >= 22 &&
-                subscription.dayOfMonth % 10 === 2
-              ? "nd"
-              : subscription.dayOfMonth >= 23 &&
-                subscription.dayOfMonth % 10 === 3
-              ? "rd"
-              : "th"}
-          </span>
-          <span>Frequency: {formatFrequency(subscription.frequency || "monthly")}</span>
+          <span>{tpl(t.subscriptionDetail.billingDay, { day: subscription.dayOfMonth })}</span>
+          <span>{tpl(t.subscriptionDetail.frequency, { freq: localizeFrequency(subscription.frequency || "monthly") })}</span>
         </div>
         <div className="flex justify-between">
-          <span>Next: {formattedNextPayment}</span>
-          <span>Since {formattedStartDate}</span>
+          <span>{tpl(t.subscriptionDetail.nextPayment, { date: formattedNextPayment })}</span>
+          <span>{tpl(t.subscriptionDetail.since, { date: formattedStartDate })}</span>
         </div>
         {subscription.category && (
           <div className="flex justify-between">
-            <span>Category:</span>
+            <span>{t.subscriptionDetail.category}:</span>
             <span className="text-gray-400">{subscription.category}</span>
           </div>
         )}
@@ -246,7 +233,7 @@ const SubscriptionDetail: React.FC<SubscriptionDetailProps> = ({
           className="flex justify-between border-t pt-1 mt-1"
           style={{ borderColor: `#${getServiceColor(subscription.name, subscription.color)}40` }}
         >
-          <span>Total spent:</span>
+          <span>{t.subscriptionDetail.totalSpent}:</span>
           <span>{calculateTotalSpent(subscription)}</span>
         </div>
       </div>
@@ -258,17 +245,19 @@ const SubscriptionDetail: React.FC<SubscriptionDetailProps> = ({
               onClick={() => onEdit(subscription)}
               className="flex-1 py-1 text-xs rounded bg-blue-600 hover:bg-blue-500 text-white transition-colors"
             >
-              Edit
+              {t.subscriptionDetail.editButton}
             </button>
           )}
           {onDelete && (
             <button
               onClick={() => {
-                if (confirm(`Delete "${subscription.name}"?`)) { onDelete(subscription.id); }
+                if (confirm(tpl(t.subscriptionDetail.deleteConfirm, { name: subscription.name }))) {
+                  onDelete(subscription.id);
+                }
               }}
               className="flex-1 py-1 text-xs rounded bg-red-700 hover:bg-red-600 text-white transition-colors"
             >
-              Delete
+              {t.subscriptionDetail.deleteButton}
             </button>
           )}
         </div>
