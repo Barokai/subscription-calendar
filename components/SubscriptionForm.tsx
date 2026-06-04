@@ -51,6 +51,7 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({
   const [amount, setAmount] = useState(subscription?.amount?.toString() ?? "");
   const [currency, setCurrency] = useState(subscription?.currency ?? "EUR");
   const [frequency, setFrequency] = useState(subscription?.frequency ?? "monthly");
+  const [isOneTime, setIsOneTime] = useState(subscription?.frequency === "once");
   const [dayOfMonth, setDayOfMonth] = useState(subscription?.dayOfMonth?.toString() ?? "1");
   const [category, setCategory] = useState(subscription?.category ?? "");
   const [customCategory, setCustomCategory] = useState("");
@@ -73,17 +74,20 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({
     const parsedDay = parseInt(dayOfMonth);
     if (isNaN(parsedDay) || parsedDay < 1 || parsedDay > 31) { setError(t.subscriptionForm.errorInvalidDay); return; }
 
+    const effectiveFrequency = isOneTime ? "once" : frequency;
+    const effectiveEndDate = isOneTime ? startDate : (endDate || null);
+
     setSaving(true);
     try {
       await onSave({
         name: name.trim(),
         amount: parsedAmount,
         currency,
-        frequency,
+        frequency: effectiveFrequency,
         dayOfMonth: parsedDay,
         category: effectiveCategory || null,
         startDate,
-        endDate: endDate || null,
+        endDate: effectiveEndDate,
         color: color || null,
       });
     } catch (err) {
@@ -146,12 +150,33 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({
             </div>
           </div>
 
+          {/* One-time toggle */}
+          <div className="flex items-center justify-between">
+            <label className={labelCls}>{t.subscriptionForm.oneTimeLabel}</label>
+            <input
+              type="checkbox"
+              checked={isOneTime}
+              onChange={(e) => setIsOneTime(e.target.checked)}
+              className="h-4 w-4 accent-blue-500"
+            />
+          </div>
+          <p className="text-xs text-gray-500 -mt-2">{t.subscriptionForm.oneTimeHelp}</p>
+
           {/* Frequency + Day */}
           <div className="flex gap-2">
             <div className="flex-1">
               <label className={labelCls}>{t.subscriptionForm.frequencyLabel}</label>
-              <select className={inputCls} value={frequency} onChange={e => setFrequency(e.target.value)}>
-                {FREQUENCIES.map(f => <option key={f.value} value={f.value}>{f.label}</option>)}
+              <select
+                className={`${inputCls} ${isOneTime ? "opacity-60 cursor-not-allowed" : ""}`}
+                value={isOneTime ? "once" : frequency}
+                onChange={e => setFrequency(e.target.value)}
+                disabled={isOneTime}
+              >
+                {isOneTime ? (
+                  <option value="once">{t.subscriptionForm.frequencyOnce}</option>
+                ) : (
+                  FREQUENCIES.map(f => <option key={f.value} value={f.value}>{f.label}</option>)
+                )}
               </select>
             </div>
             <div className="w-24">
@@ -198,7 +223,13 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({
             </div>
             <div className="flex-1">
               <label className={labelCls}>{t.subscriptionForm.endDateLabel}</label>
-              <input className={inputCls} type="date" value={endDate} onChange={e => setEndDate(e.target.value)} />
+              <input
+                className={`${inputCls} ${isOneTime ? "opacity-60 cursor-not-allowed" : ""}`}
+                type="date"
+                value={isOneTime ? startDate : endDate}
+                onChange={e => setEndDate(e.target.value)}
+                disabled={isOneTime}
+              />
             </div>
           </div>
 

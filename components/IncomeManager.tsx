@@ -35,6 +35,7 @@ const IncomeManager: React.FC<IncomeManagerProps> = ({
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState<IncomeInput>(EMPTY_FORM);
+  const [isOneTime, setIsOneTime] = useState(false);
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
 
@@ -49,6 +50,7 @@ const IncomeManager: React.FC<IncomeManagerProps> = ({
 
   function openAdd() {
     setForm(EMPTY_FORM);
+    setIsOneTime(false);
     setEditId(null);
     setFormError(null);
     setShowForm(true);
@@ -63,6 +65,7 @@ const IncomeManager: React.FC<IncomeManagerProps> = ({
       startDate: income.startDate,
       endDate: income.endDate,
     });
+    setIsOneTime(!!income.endDate && income.endDate === income.startDate);
     setEditId(income.id);
     setFormError(null);
     setShowForm(true);
@@ -81,10 +84,14 @@ const IncomeManager: React.FC<IncomeManagerProps> = ({
     try {
       setSaving(true);
       setFormError(null);
+      const effectiveInput: IncomeInput = {
+        ...form,
+        endDate: isOneTime ? form.startDate : form.endDate,
+      };
       if (editId) {
-        await onUpdate(editId, form);
+        await onUpdate(editId, effectiveInput);
       } else {
-        await onAdd(form);
+        await onAdd(effectiveInput);
       }
       closeForm();
     } catch (err) {
@@ -128,19 +135,26 @@ const IncomeManager: React.FC<IncomeManagerProps> = ({
         {incomes.length === 0 ? (
           <p className="px-4 py-4 text-sm text-gray-500 italic">{t.income.noIncomesMessage}</p>
         ) : (
-          incomes.map((inc) => (
+          incomes.map((inc) => {
+            // A one-time income is encoded as startDate === endDate
+            const isOneTimeIncome = !!inc.endDate && inc.endDate === inc.startDate;
+            return (
             <div key={inc.id} className="flex items-center justify-between px-4 py-3 gap-3">
               <div className="flex-1 min-w-0">
                 <div className="font-medium text-sm truncate">{inc.name}</div>
                 <div className="text-xs text-gray-500">
                   {t.subscriptionForm.dayOfMonthLabel}: {inc.dayOfMonth} · {inc.currency}
+                  {isOneTimeIncome && (
+                    <span className="ml-2 text-blue-400">{t.income.oneTimeBadge}</span>
+                  )}
                   {inc.endDate && (
                     <span className="ml-2 text-yellow-500">→ {inc.endDate}</span>
                   )}
                 </div>
               </div>
               <div className="font-semibold text-green-500 text-sm flex-shrink-0">
-                {formatCurrency(inc.amount, inc.currency)}/mo
+                {formatCurrency(inc.amount, inc.currency)}
+                {!isOneTimeIncome ? "/mo" : ""}
               </div>
               <div className="flex gap-2 flex-shrink-0">
                 <button
@@ -157,7 +171,8 @@ const IncomeManager: React.FC<IncomeManagerProps> = ({
                 </button>
               </div>
             </div>
-          ))
+            );
+          })
         )}
       </div>
 
@@ -200,6 +215,16 @@ const IncomeManager: React.FC<IncomeManagerProps> = ({
                   />
                 </div>
               </div>
+              <div className="flex items-center justify-between">
+                <label className="block text-sm font-medium">{t.income.oneTimeLabel}</label>
+                <input
+                  type="checkbox"
+                  checked={isOneTime}
+                  onChange={(e) => setIsOneTime(e.target.checked)}
+                  className="h-4 w-4 accent-green-500"
+                />
+              </div>
+              <p className="text-xs text-gray-500 -mt-2">{t.income.oneTimeHelp}</p>
               <div>
                 <label className="block text-sm font-medium mb-1">{t.income.dayOfMonthLabel}</label>
                 <input
@@ -225,9 +250,10 @@ const IncomeManager: React.FC<IncomeManagerProps> = ({
                   <label className="block text-sm font-medium mb-1">{t.income.endDateLabel}</label>
                   <input
                     type="date"
-                    className={inputCls}
-                    value={form.endDate || ""}
+                    className={`${inputCls} ${isOneTime ? "opacity-60 cursor-not-allowed" : ""}`}
+                    value={isOneTime ? form.startDate : (form.endDate || "")}
                     onChange={(e) => setForm({ ...form, endDate: e.target.value || null })}
+                    disabled={isOneTime}
                   />
                 </div>
               </div>

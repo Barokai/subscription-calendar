@@ -83,6 +83,22 @@ export function useSubscriptions(demoMode: boolean, mockData: Subscription[]) {
   }, []);
 
   const add = async (input: SubscriptionInput): Promise<void> => {
+    if (input.frequency === "once") {
+      if (demoMode) {
+        const created = buildDemoSubscription(input);
+        updateSubscriptionState((prev) =>
+          [...prev, created].sort((a, b) => a.name.localeCompare(b.name))
+        );
+        return;
+      }
+
+      const created = await createSubscription(input);
+      updateSubscriptionState((prev) =>
+        [...prev, created].sort((a, b) => a.name.localeCompare(b.name))
+      );
+      return;
+    }
+
     const current = subscriptionsRef.current;
     const sameStartVersion = findSubscriptionWithSameStartDate(current, input);
 

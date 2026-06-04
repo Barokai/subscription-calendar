@@ -43,13 +43,14 @@ const CashFlowProjection: React.FC<CashFlowProjectionProps> = ({
 
     for (let i = 0; i < 12; i++) {
       const d = new Date(today.getFullYear(), today.getMonth() + i, 1);
-      const month = d.getMonth() + 1; // 1-based
+      const monthIndex = d.getMonth(); // 0-based
+      const monthNumber = monthIndex + 1; // 1-based
       const year = d.getFullYear();
 
       // Subscriptions active this month
       const expenseTotal = subscriptions.reduce((sum, s) => {
         const startDate = new Date(s.startDate);
-        if (!isPaymentInMonth(s.frequency, startDate, month, year)) { return sum; }
+        if (!isPaymentInMonth(s.frequency, startDate, monthIndex, year)) { return sum; }
         return sum + s.amount;
       }, 0);
 
@@ -58,8 +59,8 @@ const CashFlowProjection: React.FC<CashFlowProjectionProps> = ({
         const start = new Date(inc.startDate);
         const end = inc.endDate ? new Date(inc.endDate) : null;
         const inRange =
-          (start.getFullYear() < year || (start.getFullYear() === year && start.getMonth() + 1 <= month)) &&
-          (!end || end.getFullYear() > year || (end.getFullYear() === year && end.getMonth() + 1 >= month));
+          (start.getFullYear() < year || (start.getFullYear() === year && start.getMonth() + 1 <= monthNumber)) &&
+          (!end || end.getFullYear() > year || (end.getFullYear() === year && end.getMonth() + 1 >= monthNumber));
         return sum + (inRange ? inc.amount : 0);
       }, 0);
 
@@ -68,7 +69,7 @@ const CashFlowProjection: React.FC<CashFlowProjectionProps> = ({
 
       rows.push({
         label: getMonthLabel(d, userLocale),
-        isoMonth: `${year}-${String(month).padStart(2, "0")}`,
+        isoMonth: `${year}-${String(monthNumber).padStart(2, "0")}`,
         incomeTotal,
         expenseTotal,
         net,
