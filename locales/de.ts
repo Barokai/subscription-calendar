@@ -59,6 +59,8 @@ export const de: Locale = {
     sharedReadOnlyLabel: "nur lesen",
     readOnlySuffix: "nur lesen",
     sharedReadOnlyInfo: "{count} geteilte Abonnement-Einträge sind im Nur-Lesen-Modus sichtbar.",
+    tabOperations: "Übersicht",
+    tabInsights: "Einblicke",
   },
   importModal: {
     uploadTitle: "Abonnements oder Einkommen importieren",

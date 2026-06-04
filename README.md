@@ -16,6 +16,8 @@ A visual calendar app to track and manage all your recurring subscriptions in on
 - Mark expenses as paid via bank transfer or a selected credit card
 - Import expenses with a default payment method and optional bulk credit-card assignment
 - Read-only sharing by invited email (viewer can inspect shared data, no writes)
+- Responsive, labeled action controls for better mobile/desktop usability
+- Operations/Insights tabs to reduce long scrolling on smaller screens
 - Brand icons auto-resolved via [simple-icons](https://simpleicons.org/) with initials fallback
 - Category grouping (Entertainment, Music, Productivity, …)
 - Monthly spending summary & pie chart

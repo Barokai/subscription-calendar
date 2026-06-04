@@ -76,6 +76,7 @@ const SubscriptionCalendar: React.FC = () => {
   const [showAddForm, setShowAddForm] = useState<boolean>(false);
   const [editingSubscription, setEditingSubscription] = useState<Subscription | null>(null);
   const [showImport, setShowImport] = useState<boolean>(false);
+  const [activeTab, setActiveTab] = useState<"operations" | "insights">("operations");
   const [lastFetchTime, setLastFetchTime] = useState<Date | undefined>(undefined);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
@@ -699,6 +700,18 @@ const SubscriptionCalendar: React.FC = () => {
   return (
     <div className="flex justify-center items-start min-h-screen py-2 sm:py-4">
       <div className={`max-w-[1700px] w-full mx-auto ${isDarkMode ? "bg-gray-900 text-white" : "bg-white text-gray-800"} rounded-lg shadow-lg relative`}>
+        <div className="absolute top-3 right-3 z-20 flex items-center gap-2">
+          <button
+            onClick={toggleDarkMode}
+            className="w-9 h-9 rounded-full border border-gray-600 hover:bg-gray-700 transition-colors flex items-center justify-center"
+            aria-label={isDarkMode ? t.nav.switchToLightMode : t.nav.switchToDarkMode}
+            title={isDarkMode ? t.nav.switchToLightMode : t.nav.switchToDarkMode}
+          >
+            {isDarkMode ? "☀️" : "🌙"}
+          </button>
+          <LanguageSwitcher isDarkMode={isDarkMode} />
+        </div>
+
         {pendingDayUpdate && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60 p-4">
             <div className={`w-full max-w-md rounded-xl shadow-2xl p-5 ${isDarkMode ? "bg-gray-900 text-white" : "bg-white text-gray-800"}`}>
@@ -938,7 +951,7 @@ const SubscriptionCalendar: React.FC = () => {
           onClose={() => setShowSpendingChart(false)}
         />
 
-        <div className="p-3 sm:p-4 md:p-6">
+        <div className="p-3 sm:p-4 md:p-6 pt-14 sm:pt-12">
           <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center mb-5 gap-4">
             <div className="flex items-center">
               <button
@@ -971,7 +984,7 @@ const SubscriptionCalendar: React.FC = () => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 w-full sm:w-auto">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 w-full sm:w-auto">
                 <button
                   onClick={() => setShowAddForm(true)}
                   className="px-3 py-2 rounded-md bg-blue-600 text-white hover:bg-blue-500 transition-colors text-sm font-medium text-left"
@@ -986,12 +999,6 @@ const SubscriptionCalendar: React.FC = () => {
                     ⬆️ {t.nav.importFromCsv}
                   </button>
                 )}
-                <button
-                  onClick={toggleDarkMode}
-                  className="px-3 py-2 rounded-md border border-gray-600 hover:bg-gray-700 transition-colors text-sm font-medium text-left"
-                >
-                  {isDarkMode ? `☀️ ${t.nav.switchToLightMode}` : `🌙 ${t.nav.switchToDarkMode}`}
-                </button>
                 <button
                   onClick={toggleDemoMode}
                   className="px-3 py-2 rounded-md border border-gray-600 hover:bg-gray-700 transition-colors text-sm font-medium text-left"
@@ -1012,10 +1019,6 @@ const SubscriptionCalendar: React.FC = () => {
                 >
                   ↺ {inDemoMode ? t.nav.resetDemoData : t.nav.resetData}
                 </button>
-                <div className="px-2 py-2 rounded-md border border-gray-600 flex items-center justify-center sm:justify-start gap-2">
-                  <span className="text-xs text-gray-400">{t.nav.languageLabel}</span>
-                  <LanguageSwitcher isDarkMode={isDarkMode} />
-                </div>
               </div>
             </div>
           </div>
@@ -1072,15 +1075,20 @@ const SubscriptionCalendar: React.FC = () => {
                   onDragEnter={(event) => handleDayDragOver(event, dayKey)}
                   onDragOver={(event) => handleDayDragOver(event, dayKey)}
                   onDrop={(event) => handleDayDrop(event, dayObj)}
-                  onClick={() =>
-                    isMobile &&
-                    handleDayClick(
-                      dayObj.day,
-                      dayObj.month,
-                      dayObj.year,
-                      daySubscriptions
-                    )
-                  }
+                  onClick={() => {
+                    if (expandedDayIndexes.has(dayKey)) {
+                      toggleDayExpansion(dayKey);
+                      return;
+                    }
+                    if (isMobile) {
+                      handleDayClick(
+                        dayObj.day,
+                        dayObj.month,
+                        dayObj.year,
+                        daySubscriptions
+                      );
+                    }
+                  }}
                 >
                   <div className={styles.calendarDayContent}>
                     <div className="text-right font-medium mb-1">
@@ -1109,71 +1117,101 @@ const SubscriptionCalendar: React.FC = () => {
             })}
           </div>
 
-          {/* Monthly Summary Table */}
-          <MonthlySummaryTable
-            subscriptions={subscriptions}
-            month={currentDate.getMonth()}
-            year={currentDate.getFullYear()}
-            userLocale={userLocale}
-            isDarkMode={isDarkMode}
-            onSubscriptionClick={handleSubscriptionClick}
-            onSubscriptionHover={handleSubscriptionHover}
-            onSubscriptionLeave={handleSubscriptionLeave}
-            onDayClick={(day, month, year, daySubscriptions) => {
-              handleDayClick(day, month, year, daySubscriptions);
-            }}
-          />
+          <div className="mt-2 mb-2 flex gap-2">
+            <button
+              type="button"
+              onClick={() => setActiveTab("operations")}
+              className={`px-3 py-1.5 rounded-md text-sm font-medium border transition-colors ${
+                activeTab === "operations"
+                  ? "bg-blue-600 text-white border-blue-500"
+                  : "border-gray-600 text-gray-300 hover:bg-gray-800"
+              }`}
+            >
+              {t.calendar.tabOperations}
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab("insights")}
+              className={`px-3 py-1.5 rounded-md text-sm font-medium border transition-colors ${
+                activeTab === "insights"
+                  ? "bg-blue-600 text-white border-blue-500"
+                  : "border-gray-600 text-gray-300 hover:bg-gray-800"
+              }`}
+            >
+              {t.calendar.tabInsights}
+            </button>
+          </div>
 
-          {/* Income Sources */}
-          <IncomeManager
-            incomes={ownedIncomes}
-            isDarkMode={isDarkMode}
-            userLocale={userLocale}
-            onAdd={addIncome}
-            onUpdate={updateIncome}
-            onRemove={removeIncome}
-          />
+          <div className="space-y-1.5 sm:space-y-2">
+            {activeTab === "operations" && (
+              <>
+                <MonthlySummaryTable
+                  subscriptions={subscriptions}
+                  month={currentDate.getMonth()}
+                  year={currentDate.getFullYear()}
+                  userLocale={userLocale}
+                  isDarkMode={isDarkMode}
+                  onSubscriptionClick={handleSubscriptionClick}
+                  onSubscriptionHover={handleSubscriptionHover}
+                  onSubscriptionLeave={handleSubscriptionLeave}
+                  onDayClick={(day, month, year, daySubscriptions) => {
+                    handleDayClick(day, month, year, daySubscriptions);
+                  }}
+                />
 
-          <CreditCardManager
-            creditCards={ownedCreditCards}
-            subscriptions={ownedSubscriptions}
-            isDarkMode={isDarkMode}
-            onAdd={addCreditCard}
-            onUpdate={updateCreditCard}
-            onRemove={removeCreditCard}
-          />
+                <IncomeManager
+                  incomes={ownedIncomes}
+                  isDarkMode={isDarkMode}
+                  userLocale={userLocale}
+                  onAdd={addIncome}
+                  onUpdate={updateIncome}
+                  onRemove={removeIncome}
+                />
 
-          <SharingManager
-            shares={shares}
-            isDarkMode={isDarkMode}
-            onAdd={async (viewerEmail) => addShare({ viewerEmail })}
-            onRemove={removeShare}
-          />
+                <CreditCardManager
+                  creditCards={ownedCreditCards}
+                  subscriptions={ownedSubscriptions}
+                  isDarkMode={isDarkMode}
+                  onAdd={addCreditCard}
+                  onUpdate={updateCreditCard}
+                  onRemove={removeCreditCard}
+                />
 
-          {/* Cash Flow Projection */}
-          <CashFlowProjection
-            subscriptions={subscriptions}
-            incomes={incomes}
-            isDarkMode={isDarkMode}
-            userLocale={userLocale}
-          />
+                <SharingManager
+                  shares={shares}
+                  isDarkMode={isDarkMode}
+                  onAdd={async (viewerEmail) => addShare({ viewerEmail })}
+                  onRemove={removeShare}
+                />
 
-          {/* Subscription Trends */}
-          <SubscriptionTrends
-            subscriptions={subscriptions}
-            userLocale={userLocale}
-            isDarkMode={isDarkMode}
-            lastFetchTime={lastFetchTime}
-            currentMonth={currentDate.getMonth()}
-            currentYear={currentDate.getFullYear()}
-          />
+                <CashFlowProjection
+                  subscriptions={subscriptions}
+                  incomes={incomes}
+                  isDarkMode={isDarkMode}
+                  userLocale={userLocale}
+                />
+              </>
+            )}
 
-          {/* Yearly Projection & Insights */}
-          <YearlyProjection
-            subscriptions={subscriptions}
-            userLocale={userLocale}
-            isDarkMode={isDarkMode}
-          />
+            {activeTab === "insights" && (
+              <>
+                <SubscriptionTrends
+                  subscriptions={subscriptions}
+                  userLocale={userLocale}
+                  isDarkMode={isDarkMode}
+                  lastFetchTime={lastFetchTime}
+                  currentMonth={currentDate.getMonth()}
+                  currentYear={currentDate.getFullYear()}
+                />
+
+                <YearlyProjection
+                  subscriptions={subscriptions}
+                  userLocale={userLocale}
+                  isDarkMode={isDarkMode}
+                />
+              </>
+            )}
+          </div>
         </div>
       </div>
     </div>
