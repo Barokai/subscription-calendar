@@ -1140,58 +1140,48 @@ const SubscriptionCalendar: React.FC = () => {
               </h1>
             </div>
 
-            <div className="w-full xl:w-auto flex flex-col sm:flex-row sm:items-start gap-3">
-              <div
-                className="text-left sm:text-right cursor-pointer group relative sm:min-w-[220px]"
-                onClick={() => setShowSpendingChart(true)}
-                onMouseEnter={() => window.innerWidth > 768 && setShowSpendingChart(true)}
-              >
-                <div className="text-xs sm:text-sm text-gray-400">{t.nav.monthlySpend}</div>
-                <div className="text-lg sm:text-2xl font-bold group-hover:text-blue-500 transition-colors">
-                  {calculateMonthlyTotal()}
-                  <span className="hidden group-hover:inline-block ml-2 text-xs">📊</span>
+            <div className="w-full xl:w-auto flex flex-col gap-2">
+              {/* Spend + income always side by side */}
+              <div className="flex flex-row gap-3 sm:gap-5">
+                <div
+                  className="text-left cursor-pointer group relative flex-1"
+                  onClick={() => setShowSpendingChart(true)}
+                  onMouseEnter={() => window.innerWidth > 768 && setShowSpendingChart(true)}
+                >
+                  <div className="text-xs sm:text-sm text-gray-400">{t.nav.monthlySpend}</div>
+                  <div className="text-lg sm:text-2xl font-bold group-hover:text-blue-500 transition-colors">
+                    {calculateMonthlyTotal()}
+                    <span className="hidden group-hover:inline-block ml-2 text-xs">📊</span>
+                  </div>
+                </div>
+
+                <div
+                  className="text-left cursor-pointer group relative flex-1"
+                  onClick={() => setShowIncomeChart(true)}
+                  onMouseEnter={() => window.innerWidth > 768 && setShowIncomeChart(true)}
+                >
+                  <div className="text-xs sm:text-sm text-gray-400">{t.nav.monthlyIncome}</div>
+                  <div className="text-lg sm:text-2xl font-bold text-green-400 group-hover:text-green-300 transition-colors">
+                    {calculateMonthlyIncomeTotal()}
+                    <span className="hidden group-hover:inline-block ml-2 text-xs">📊</span>
+                  </div>
                 </div>
               </div>
 
-              <div
-                className="text-left sm:text-right cursor-pointer group relative sm:min-w-[180px]"
-                onClick={() => setShowIncomeChart(true)}
-                onMouseEnter={() => window.innerWidth > 768 && setShowIncomeChart(true)}
-              >
-                <div className="text-xs sm:text-sm text-gray-400">{t.nav.monthlyIncome}</div>
-                <div className="text-lg sm:text-2xl font-bold text-green-400 group-hover:text-green-300 transition-colors">
-                  {calculateMonthlyIncomeTotal()}
-                  <span className="hidden group-hover:inline-block ml-2 text-xs">📊</span>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 w-full sm:w-auto">
+              {/* Action buttons — demo toggle lives in the footer */}
+              <div className="flex gap-2">
                 <button
                   onClick={() => setShowAddForm(true)}
-                  className="px-3 py-2 rounded-md bg-blue-600 text-white hover:bg-blue-500 transition-colors text-sm font-medium text-left"
+                  className="flex-1 px-2 py-2 rounded-md bg-blue-600 text-white hover:bg-blue-500 transition-colors text-xs sm:text-sm font-medium text-left"
                 >
                   ➕ {t.nav.addSubscriptionButton}
                 </button>
                 {!inDemoMode && (
                   <button
                     onClick={() => setShowImport(true)}
-                    className="px-3 py-2 rounded-md bg-gray-700 text-white hover:bg-gray-600 transition-colors text-sm font-medium text-left"
+                    className="flex-1 px-2 py-2 rounded-md bg-gray-700 text-white hover:bg-gray-600 transition-colors text-xs sm:text-sm font-medium text-left"
                   >
                     ⬆️ {t.nav.importFromCsv}
-                  </button>
-                )}
-                <button
-                  onClick={toggleDemoMode}
-                  className="px-3 py-2 rounded-md border border-gray-600 hover:bg-gray-700 transition-colors text-sm font-medium text-left"
-                >
-                  {inDemoMode ? `🔴 ${t.nav.exitDemoMode}` : `🔍 ${t.nav.enterDemoMode}`}
-                </button>
-                {!inDemoMode && (
-                  <button
-                    onClick={handleSignOut}
-                    className="px-3 py-2 rounded-md border border-gray-600 hover:bg-gray-700 transition-colors text-sm font-medium text-left text-gray-200"
-                  >
-                    ↩️ {t.nav.signOut}
                   </button>
                 )}
               </div>
@@ -1454,11 +1444,17 @@ const SubscriptionCalendar: React.FC = () => {
             )}
           </div>
 
-          {/* Reset button — kept at the very bottom, away from destructive-action accidents */}
-          <div className="mt-6 pt-4 border-t border-gray-700/40 flex justify-end">
+          {/* Footer: demo toggle (left) + reset (right) */}
+          <div className="mt-6 pt-4 border-t border-gray-700/40 flex items-center justify-between gap-2">
+            <button
+              onClick={toggleDemoMode}
+              className="px-3 py-2 rounded-md border border-gray-600 hover:bg-gray-700 transition-colors text-xs sm:text-sm font-medium text-gray-400"
+            >
+              {inDemoMode ? `🔴 ${t.nav.exitDemoMode}` : `🔍 ${t.nav.enterDemoMode}`}
+            </button>
             <button
               onClick={() => setShowResetConfirm(true)}
-              className="px-3 py-2 rounded-md border border-red-700/60 hover:bg-red-900/40 transition-colors text-sm font-medium text-red-400"
+              className="px-3 py-2 rounded-md border border-red-700/60 hover:bg-red-900/40 transition-colors text-xs sm:text-sm font-medium text-red-400"
             >
               ↺ {inDemoMode ? t.nav.resetDemoData : t.nav.resetData}
             </button>
