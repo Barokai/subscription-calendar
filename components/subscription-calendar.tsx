@@ -1050,23 +1050,6 @@ const SubscriptionCalendar: React.FC = () => {
             }}
           />
 
-          {/* Subscription Trends */}
-          <SubscriptionTrends
-            subscriptions={subscriptions}
-            userLocale={userLocale}
-            isDarkMode={isDarkMode}
-            lastFetchTime={lastFetchTime}
-            currentMonth={currentDate.getMonth()}
-            currentYear={currentDate.getFullYear()}
-          />
-
-          {/* Yearly Projection & Insights */}
-          <YearlyProjection
-            subscriptions={subscriptions}
-            userLocale={userLocale}
-            isDarkMode={isDarkMode}
-          />
-
           {/* Income Sources */}
           <IncomeManager
             incomes={incomes}
@@ -1083,6 +1066,23 @@ const SubscriptionCalendar: React.FC = () => {
             incomes={incomes}
             isDarkMode={isDarkMode}
             userLocale={userLocale}
+          />
+
+          {/* Subscription Trends */}
+          <SubscriptionTrends
+            subscriptions={subscriptions}
+            userLocale={userLocale}
+            isDarkMode={isDarkMode}
+            lastFetchTime={lastFetchTime}
+            currentMonth={currentDate.getMonth()}
+            currentYear={currentDate.getFullYear()}
+          />
+
+          {/* Yearly Projection & Insights */}
+          <YearlyProjection
+            subscriptions={subscriptions}
+            userLocale={userLocale}
+            isDarkMode={isDarkMode}
           />
         </div>
       </div>

@@ -16,6 +16,7 @@ A visual calendar app to track and manage all your recurring subscriptions in on
 - Category grouping (Entertainment, Music, Productivity, …)
 - Monthly spending summary & pie chart
 - Income sources + cash-flow projection
+- Dashboard flow: monthly operations first, strategic yearly insights later
 - Dark/light mode, locale support
 - Google OAuth login — access restricted to an invite-only email allowlist
 - Demo mode for exploring without an account
