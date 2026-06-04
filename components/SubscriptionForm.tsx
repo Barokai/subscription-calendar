@@ -6,6 +6,7 @@ import { CreditCard } from "@/lib/credit-cards";
 import { renderSubscriptionIcon } from "./icon-utils";
 import { useI18n } from "@/lib/i18n";
 import { useEscapeKey } from "@/hooks/useEscapeKey";
+import ModalBackdrop from "./modal-backdrop";
 
 const CURRENCIES = ["EUR", "USD", "GBP", "CHF", "JPY", "CAD", "AUD"];
 
@@ -108,15 +109,15 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({
     }
   };
 
-  const bg = isDarkMode ? "bg-gray-900 text-white" : "bg-white text-gray-800";
+  const bg = isDarkMode ? "bg-gray-800 text-white" : "bg-white text-gray-800";
   const inputCls = `w-full px-3 py-2 rounded-md border text-sm ${isDarkMode ? "bg-gray-800 border-gray-600 text-white placeholder-gray-500" : "bg-gray-50 border-gray-300 text-gray-900"}`;
   const labelCls = "block text-xs font-medium mb-1 text-gray-400";
 
   useEscapeKey(onCancel, true);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black bg-opacity-60 p-2 sm:p-4">
-      <div className={`w-full max-w-md rounded-xl shadow-2xl p-5 ${bg}`}>
+    <ModalBackdrop onClose={onCancel} panelClassName="max-w-lg">
+      <div className={`w-full p-5 ${bg}`}>
         <div className="flex items-center mb-4">
           {name && (
             <div className="w-8 h-8 mr-3 flex-shrink-0">
@@ -321,7 +322,7 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({
           </div>
         </form>
       </div>
-    </div>
+    </ModalBackdrop>
   );
 };
 

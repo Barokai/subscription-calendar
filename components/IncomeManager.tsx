@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { Income, IncomeInput } from "@/lib/incomes";
 import { useI18n } from "@/lib/i18n";
 import { useEscapeKey } from "@/hooks/useEscapeKey";
+import ModalBackdrop from "./modal-backdrop";
 
 interface IncomeManagerProps {
   incomes: Income[];
@@ -186,8 +187,8 @@ const IncomeManager: React.FC<IncomeManagerProps> = ({
 
       {/* Form modal */}
       {showForm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60">
-          <div className={`w-full max-w-md rounded-xl shadow-xl p-6 ${bg}`}>
+        <ModalBackdrop onClose={closeForm} panelClassName="max-w-lg">
+          <div className={`w-full p-6 ${bg}`}>
             <h3 className="text-lg font-bold mb-4">
               {editId ? t.income.editTitle : t.income.addTitle}
             </h3>
@@ -288,7 +289,7 @@ const IncomeManager: React.FC<IncomeManagerProps> = ({
               </div>
             </form>
           </div>
-        </div>
+        </ModalBackdrop>
       )}
     </div>
   );
