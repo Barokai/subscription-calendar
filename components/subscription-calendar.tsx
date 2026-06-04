@@ -785,8 +785,8 @@ const SubscriptionCalendar: React.FC = () => {
     subscriptions: Subscription[],
     dayIncomes: Income[]
   ) => {
-    // Show overlay on mobile when there's any financial activity
-    if ((subscriptions.length > 0 || dayIncomes.length > 0) && isMobile) {
+    // Show overlay whenever there's any financial activity on this day
+    if (subscriptions.length > 0 || dayIncomes.length > 0) {
       setSelectedDay({ day, month, year, subscriptions, incomes: dayIncomes });
     }
   };
@@ -1061,7 +1061,7 @@ const SubscriptionCalendar: React.FC = () => {
           />
         )}
 
-        {/* Day Subscriptions Overlay (for mobile) */}
+        {/* Day detail overlay — mobile bottom sheet, desktop centered modal */}
         {selectedDay && (
           <DaySubscriptionsOverlay
             day={selectedDay.day}
@@ -1275,15 +1275,13 @@ const SubscriptionCalendar: React.FC = () => {
                       toggleDayExpansion(dayKey);
                       return;
                     }
-                    if (isMobile) {
-                      handleDayClick(
-                        dayObj.day,
-                        dayObj.month,
-                        dayObj.year,
-                        daySubscriptions,
-                        dayIncomes
-                      );
-                    }
+                    handleDayClick(
+                      dayObj.day,
+                      dayObj.month,
+                      dayObj.year,
+                      daySubscriptions,
+                      dayIncomes
+                    );
                   }}
                 >
                   <div className={isExpanded ? styles.calendarDayContentExpanded : styles.calendarDayContent}>

@@ -37,6 +37,13 @@ const DaySubscriptionsOverlay: React.FC<DaySubscriptionsOverlayProps> = ({
     day: 'numeric',
   });
 
+  const expenseTotal = subscriptions.reduce((s, sub) => s + sub.amount, 0);
+  const incomeTotal = incomes.reduce((s, inc) => s + inc.amount, 0);
+  const fmtAmt = (n: number, currency: string) =>
+    n.toLocaleString(userLocale, { style: 'currency', currency: currency.replace('€', 'EUR') || 'EUR' });
+  const expenseCurrency = subscriptions[0]?.currency ?? 'EUR';
+  const incomeCurrency = incomes[0]?.currency ?? 'EUR';
+
   const panelBg = isDarkMode ? 'bg-gray-800 text-white' : 'bg-white text-gray-800';
   const rowBg   = isDarkMode ? 'bg-gray-700' : 'bg-gray-100';
   const labelCls = isDarkMode ? 'text-gray-400' : 'text-gray-500';
@@ -48,16 +55,30 @@ const DaySubscriptionsOverlay: React.FC<DaySubscriptionsOverlayProps> = ({
       onClick={onClose}
     >
       <div
-        className={`w-full sm:max-w-md rounded-t-2xl sm:rounded-2xl shadow-2xl flex flex-col ${panelBg}`}
+        className={`w-full sm:max-w-lg rounded-t-2xl sm:rounded-2xl shadow-2xl flex flex-col ${panelBg}`}
         style={{ maxHeight: '80vh' }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
         <div className="flex items-center justify-between px-4 pt-4 pb-3 border-b border-gray-700/30 flex-shrink-0">
-          <h3 className="text-base font-semibold">{displayDate}</h3>
+          <div className="flex-1 min-w-0">
+            <h3 className="text-base font-semibold truncate">{displayDate}</h3>
+            <div className="flex gap-3 mt-0.5">
+              {expenseTotal > 0 && (
+                <span className="text-xs font-medium text-red-400">
+                  −{fmtAmt(expenseTotal, expenseCurrency)}
+                </span>
+              )}
+              {incomeTotal > 0 && (
+                <span className="text-xs font-medium text-green-400">
+                  +{fmtAmt(incomeTotal, incomeCurrency)}
+                </span>
+              )}
+            </div>
+          </div>
           <button
             onClick={onClose}
-            className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-600/40 transition-colors"
+            className="ml-3 w-8 h-8 flex-shrink-0 flex items-center justify-center rounded-full hover:bg-gray-600/40 transition-colors"
             aria-label={t.overlay.closeButton}
           >
             ✕
