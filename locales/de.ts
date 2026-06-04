@@ -45,6 +45,8 @@ export const de: Locale = {
     resetConfirm: "Jetzt zurücksetzen",
     resettingLabel: "Zurücksetzen…",
     resetFailed: "Daten konnten nicht zurückgesetzt werden",
+    expandDaySubscriptions: "Zeige {count} weitere Abonnements",
+    collapseDaySubscriptions: "Abonnements einklappen",
   },
   importModal: {
     uploadTitle: "Abonnements oder Einkommen importieren",

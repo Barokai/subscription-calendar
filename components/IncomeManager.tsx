@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { Income, IncomeInput } from "@/lib/incomes";
 import { useI18n } from "@/lib/i18n";
+import { useEscapeKey } from "@/hooks/useEscapeKey";
 
 interface IncomeManagerProps {
   incomes: Income[];
@@ -43,6 +44,8 @@ const IncomeManager: React.FC<IncomeManagerProps> = ({
       ? "bg-gray-700 border-gray-600 text-white"
       : "bg-gray-50 border-gray-300 text-gray-900"
   }`;
+
+  useEscapeKey(closeForm, showForm);
 
   function openAdd() {
     setForm(EMPTY_FORM);

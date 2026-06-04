@@ -16,6 +16,7 @@ import { Subscription, SubscriptionInput } from "@/lib/subscriptions";
 import { Income, IncomeInput } from "@/lib/incomes";
 import { renderSubscriptionIcon } from "./icon-utils";
 import { useI18n } from "@/lib/i18n";
+import { useEscapeKey } from "@/hooks/useEscapeKey";
 
 type Step = "upload" | "preview";
 type PivotType = "expenses" | "income";
@@ -108,6 +109,8 @@ const ImportModal: React.FC<ImportModalProps> = ({
     }
     return existingSubscriptions.some((s) => s.name.toLowerCase().trim() === n);
   }, [pivotType, existingSubscriptions, existingIncomes]);
+
+  useEscapeKey(onCancel, true);
 
   const processFile = useCallback((text: string) => {
     setError(null);

@@ -3,6 +3,7 @@ import { Subscription } from "@/lib/subscriptions";
 import { parseDate } from "./date-utils";
 import { renderSubscriptionIcon } from "./icon-utils";
 import { getServiceColor } from "@/lib/icons";
+import { useEscapeKey } from "@/hooks/useEscapeKey";
 
 interface SubscriptionDetailProps {
   subscription: Subscription;
@@ -27,6 +28,8 @@ const SubscriptionDetail: React.FC<SubscriptionDetailProps> = ({
   onEdit,
   onDelete,
 }) => {
+  useEscapeKey(onClose ?? (() => {}), positionType === "click" && !!onClose);
+
   if (!subscription) {
     return null;
   }

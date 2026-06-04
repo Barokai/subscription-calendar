@@ -1,6 +1,7 @@
 import React from 'react';
 import { Subscription } from '@/lib/subscriptions';
 import { renderSubscriptionIcon } from './icon-utils';
+import { useEscapeKey } from '@/hooks/useEscapeKey';
 
 interface DaySubscriptionsOverlayProps {
   day: number;
@@ -23,6 +24,8 @@ const DaySubscriptionsOverlay: React.FC<DaySubscriptionsOverlayProps> = ({
   onClose,
   onSubscriptionClick
 }) => {
+  useEscapeKey(onClose, true);
+
   // Format the date for display
   const displayDate = new Date(year, month, day).toLocaleDateString(userLocale, {
     weekday: 'long',
