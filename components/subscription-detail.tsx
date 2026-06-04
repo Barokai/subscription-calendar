@@ -4,6 +4,7 @@ import { parseDate } from "./date-utils";
 import { renderSubscriptionIcon } from "./icon-utils";
 import { getServiceColor } from "@/lib/icons";
 import { useEscapeKey } from "@/hooks/useEscapeKey";
+import { useI18n } from "@/lib/i18n";
 
 interface SubscriptionDetailProps {
   subscription: Subscription;
@@ -30,6 +31,7 @@ const SubscriptionDetail: React.FC<SubscriptionDetailProps> = ({
   onDelete,
   readOnlyLabel,
 }) => {
+  const { t } = useI18n();
   useEscapeKey(onClose ?? (() => {}), positionType === "click" && !!onClose);
 
   if (!subscription) {
@@ -183,7 +185,7 @@ const SubscriptionDetail: React.FC<SubscriptionDetailProps> = ({
         <button
           onClick={onClose}
           className="absolute top-1 right-1 w-6 h-6 rounded-full flex items-center justify-center text-gray-500 hover:text-gray-300 hover:bg-gray-700 transition-colors"
-          aria-label="Close subscription details"
+          aria-label={t.overlay.closeButton}
         >
           ✕
         </button>

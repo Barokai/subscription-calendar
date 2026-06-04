@@ -16,6 +16,7 @@ export const en = {
   },
   nav: {
     monthlySpend: "Monthly spend",
+    monthlyIncome: "Monthly income",
     addSubscriptionButton: "Add subscription",
     importFromCsv: "Import from CSV",
     resetData: "Reset data",
@@ -285,6 +286,19 @@ export const en = {
     runningBalanceHeader: "Running Balance",
     negativeWarning: "Balance goes negative in {month}",
     projectedLabel: "{month} (projected)",
+  },
+  spendingChart: {
+    title: "Monthly Spending",
+    totalLabel: "Total",
+    closeButton: "Close",
+    viewByCategory: "By category",
+    viewByItem: "By item",
+    uncategorized: "Other",
+    categoryItemCount: "{count} items",
+  },
+  incomeChart: {
+    title: "Monthly Income",
+    closeButton: "Close",
   },
 };
 
