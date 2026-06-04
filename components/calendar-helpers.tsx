@@ -7,8 +7,8 @@ import { parseDate } from "./date-utils";
 import { renderSubscriptionIcon } from "./icon-utils";
 import { useI18n } from "@/lib/i18n";
 
-// Maximum number of subscriptions to show before "show more" button
-const MAX_VISIBLE_ICONS = 2;
+// Maximum number of subscriptions/incomes to show per row before "show more"
+const MAX_VISIBLE_ICONS = 3;
 
 export const getSubscriptionsForDay = (
   day: number,

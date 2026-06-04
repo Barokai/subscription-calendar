@@ -212,6 +212,8 @@ export const de: Locale = {
   },
   overlay: {
     closeButton: "Schließen",
+    expensesLabel: "Ausgaben",
+    incomeLabel: "Einkommen",
   },
   income: {
     title: "Einkommensquellen",

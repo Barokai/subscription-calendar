@@ -1,13 +1,16 @@
 import React from 'react';
 import { Subscription } from '@/lib/subscriptions';
+import { Income } from '@/lib/incomes';
 import { renderSubscriptionIcon } from './icon-utils';
 import { useEscapeKey } from '@/hooks/useEscapeKey';
+import { useI18n } from '@/lib/i18n';
 
 interface DaySubscriptionsOverlayProps {
   day: number;
   month: number;
   year: number;
   subscriptions: Subscription[];
+  incomes: Income[];
   userLocale: string;
   isDarkMode: boolean;
   onClose: () => void;
@@ -19,62 +22,114 @@ const DaySubscriptionsOverlay: React.FC<DaySubscriptionsOverlayProps> = ({
   month,
   year,
   subscriptions,
+  incomes,
   userLocale,
   isDarkMode,
   onClose,
-  onSubscriptionClick
+  onSubscriptionClick,
 }) => {
+  const { t } = useI18n();
   useEscapeKey(onClose, true);
 
-  // Format the date for display
   const displayDate = new Date(year, month, day).toLocaleDateString(userLocale, {
     weekday: 'long',
     month: 'long',
-    day: 'numeric'
+    day: 'numeric',
   });
 
+  const panelBg = isDarkMode ? 'bg-gray-800 text-white' : 'bg-white text-gray-800';
+  const rowBg   = isDarkMode ? 'bg-gray-700' : 'bg-gray-100';
+  const labelCls = isDarkMode ? 'text-gray-400' : 'text-gray-500';
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50">
-      <div 
-        className={`w-full max-w-md rounded-lg shadow-xl p-4 ${
-          isDarkMode ? "bg-gray-800 text-white" : "bg-white text-gray-800"
-        }`}
+    <div
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black bg-opacity-50"
+      onClick={onClose}
+    >
+      <div
+        className={`w-full sm:max-w-md rounded-t-2xl sm:rounded-2xl shadow-2xl flex flex-col ${panelBg}`}
+        style={{ maxHeight: '80vh' }}
+        onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="text-lg font-semibold">{displayDate}</h3>
-          <button 
+        {/* Header */}
+        <div className="flex items-center justify-between px-4 pt-4 pb-3 border-b border-gray-700/30 flex-shrink-0">
+          <h3 className="text-base font-semibold">{displayDate}</h3>
+          <button
             onClick={onClose}
-            className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-700"
+            className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-600/40 transition-colors"
+            aria-label={t.overlay.closeButton}
           >
             ✕
           </button>
         </div>
-        
-        <div className="space-y-3">
-          {subscriptions.map(subscription => (
-            <div 
-              key={subscription.id} 
-              className={`p-3 rounded-md ${
-                isDarkMode ? "bg-gray-700" : "bg-gray-100"
-              } cursor-pointer hover:opacity-90 transition-opacity`}
-              onClick={(e) => onSubscriptionClick(subscription, e)}
-            >
-              <div className="flex items-center">
-                <div className="w-10 h-10 mr-3">
-                  {renderSubscriptionIcon(subscription.name, subscription.color, "w-full h-full")}
-                </div>
-                <div>
-                  <div className="font-medium">{subscription.name}</div>
-                  <div className="text-sm opacity-80">
-                    {subscription.amount.toLocaleString(userLocale, {
-                      style: "currency",
-                      currency: subscription.currency.replace("€", "EUR") || "EUR",
-                    })}
+
+        {/* Scrollable content */}
+        <div className="overflow-y-auto flex-1 px-4 py-3 space-y-4">
+
+          {/* Expenses section */}
+          {subscriptions.length > 0 && (
+            <div>
+              <p className={`text-xs font-semibold uppercase tracking-wide mb-2 ${labelCls}`}>
+                {t.overlay.expensesLabel}
+              </p>
+              <div className="space-y-2">
+                {subscriptions.map((sub) => (
+                  <div
+                    key={sub.id}
+                    className={`p-3 rounded-lg ${rowBg} cursor-pointer hover:opacity-90 transition-opacity`}
+                    onClick={(e) => onSubscriptionClick(sub, e)}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 flex-shrink-0">
+                        {renderSubscriptionIcon(sub.name, sub.color, 'w-full h-full')}
+                      </div>
+                      <div className="min-w-0">
+                        <div className="font-medium truncate">{sub.name}</div>
+                        <div className={`text-sm ${labelCls}`}>
+                          {sub.amount.toLocaleString(userLocale, {
+                            style: 'currency',
+                            currency: sub.currency.replace('€', 'EUR') || 'EUR',
+                          })}
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                </div>
+                ))}
               </div>
             </div>
-          ))}
+          )}
+
+          {/* Income section */}
+          {incomes.length > 0 && (
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wide mb-2 text-green-400">
+                {t.overlay.incomeLabel}
+              </p>
+              <div className="space-y-2">
+                {incomes.map((inc) => (
+                  <div
+                    key={inc.id}
+                    className={`p-3 rounded-lg ${rowBg}`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 flex-shrink-0">
+                        {renderSubscriptionIcon(inc.name, null, 'w-full h-full')}
+                      </div>
+                      <div className="min-w-0">
+                        <div className="font-medium truncate">{inc.name}</div>
+                        <div className="text-sm text-green-400">
+                          +{inc.amount.toLocaleString(userLocale, {
+                            style: 'currency',
+                            currency: inc.currency.replace('€', 'EUR') || 'EUR',
+                          })}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

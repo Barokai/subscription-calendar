@@ -12,6 +12,7 @@ import {
   saveSettings as saveSettingsToStorage,
 } from "./settings-service";
 import { Subscription } from "@/lib/subscriptions";
+import { Income } from "@/lib/incomes";
 import { isPaymentInMonth } from "@/lib/frequency-utils";
 import { mockSubscriptions, mockIncomes, mockCreditCards } from "../data/mock-subscriptions";
 import {
@@ -71,7 +72,8 @@ const SubscriptionCalendar: React.FC = () => {
   const [resetError, setResetError] = useState<string | null>(null);
   const [expandedDayIndexes, setExpandedDayIndexes] = useState<Set<string>>(new Set());
   const [selectedDay, setSelectedDay] = useState<{
-    day: number; month: number; year: number; subscriptions: Subscription[];
+    day: number; month: number; year: number;
+    subscriptions: Subscription[]; incomes: Income[];
   } | null>(null);
   const [isMobile, setIsMobile] = useState<boolean>(false);
   const [showSpendingChart, setShowSpendingChart] = useState<boolean>(false);
@@ -735,11 +737,12 @@ const SubscriptionCalendar: React.FC = () => {
     day: number,
     month: number,
     year: number,
-    subscriptions: Subscription[]
+    subscriptions: Subscription[],
+    dayIncomes: Income[]
   ) => {
-    // Only show overlay if there are subscriptions and we're on mobile
-    if (subscriptions.length > 0 && isMobile) {
-      setSelectedDay({ day, month, year, subscriptions });
+    // Show overlay on mobile when there's any financial activity
+    if ((subscriptions.length > 0 || dayIncomes.length > 0) && isMobile) {
+      setSelectedDay({ day, month, year, subscriptions, incomes: dayIncomes });
     }
   };
 
@@ -990,6 +993,7 @@ const SubscriptionCalendar: React.FC = () => {
             month={selectedDay.month}
             year={selectedDay.year}
             subscriptions={selectedDay.subscriptions}
+            incomes={selectedDay.incomes}
             userLocale={userLocale}
             isDarkMode={isDarkMode}
             onClose={closeDayOverlay}
@@ -1104,12 +1108,6 @@ const SubscriptionCalendar: React.FC = () => {
                     ↩️ {t.nav.signOut}
                   </button>
                 )}
-                <button
-                  onClick={() => setShowResetConfirm(true)}
-                  className="px-3 py-2 rounded-md border border-red-700 hover:bg-red-900 transition-colors text-sm font-medium text-left text-red-300"
-                >
-                  ↺ {inDemoMode ? t.nav.resetDemoData : t.nav.resetData}
-                </button>
               </div>
             </div>
           </div>
@@ -1139,7 +1137,7 @@ const SubscriptionCalendar: React.FC = () => {
             ))}
           </div>
 
-          <div className="grid grid-cols-7 gap-1">
+          <div className="grid grid-cols-7 gap-1 items-start">
             {renderCalendar().map((dayObj, index) => {
               const dayKey = `${dayObj.year}-${dayObj.month}-${dayObj.day}`;
               const daySubscriptions = dayObj.isCurrentMonth
@@ -1178,10 +1176,12 @@ const SubscriptionCalendar: React.FC = () => {
                 }
               }
 
+              const isExpanded = expandedDayIndexes.has(dayKey);
+
               return (
                 <div
                   key={`${dayKey}-${index}`}
-                  className={`rounded-md ${styles.calendarDay} ${
+                  className={`rounded-md ${isExpanded ? styles.calendarDayExpanded : styles.calendarDay} ${
                     isDarkMode ? "bg-gray-800" : "bg-gray-100"
                   } ${isGrayed ? "opacity-40" : ""} ${
                     dayObj.isToday ? "ring-2 ring-blue-500" : ""
@@ -1192,7 +1192,7 @@ const SubscriptionCalendar: React.FC = () => {
                   onDragOver={(event) => handleDayDragOver(event, dayKey)}
                   onDrop={(event) => handleDayDrop(event, dayObj)}
                   onClick={() => {
-                    if (expandedDayIndexes.has(dayKey)) {
+                    if (isExpanded) {
                       toggleDayExpansion(dayKey);
                       return;
                     }
@@ -1201,12 +1201,13 @@ const SubscriptionCalendar: React.FC = () => {
                         dayObj.day,
                         dayObj.month,
                         dayObj.year,
-                        daySubscriptions
+                        daySubscriptions,
+                        dayIncomes
                       );
                     }
                   }}
                 >
-                  <div className={styles.calendarDayContent}>
+                  <div className={isExpanded ? styles.calendarDayContentExpanded : styles.calendarDayContent}>
                     {tintColor && (
                       <div
                         className="absolute inset-0 rounded-md pointer-events-none"
@@ -1291,7 +1292,7 @@ const SubscriptionCalendar: React.FC = () => {
                   onSubscriptionHover={handleSubscriptionHover}
                   onSubscriptionLeave={handleSubscriptionLeave}
                   onDayClick={(day, month, year, daySubscriptions) => {
-                    handleDayClick(day, month, year, daySubscriptions);
+                    handleDayClick(day, month, year, daySubscriptions, []);
                   }}
                 />
 
@@ -1347,6 +1348,16 @@ const SubscriptionCalendar: React.FC = () => {
                 />
               </>
             )}
+          </div>
+
+          {/* Reset button — kept at the very bottom, away from destructive-action accidents */}
+          <div className="mt-6 pt-4 border-t border-gray-700/40 flex justify-end">
+            <button
+              onClick={() => setShowResetConfirm(true)}
+              className="px-3 py-2 rounded-md border border-red-700/60 hover:bg-red-900/40 transition-colors text-sm font-medium text-red-400"
+            >
+              ↺ {inDemoMode ? t.nav.resetDemoData : t.nav.resetData}
+            </button>
           </div>
         </div>
       </div>
