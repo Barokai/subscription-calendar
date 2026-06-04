@@ -12,6 +12,9 @@ A visual calendar app to track and manage all your recurring subscriptions in on
 - Monthly calendar view of all upcoming payments
 - Add, edit and delete subscriptions in-app (no spreadsheet needed)
 - CSV import for bank/credit-card statements and pivot sheets, including income sources
+- Credit card management (name, statement day, due day)
+- Mark expenses as paid via bank transfer or a selected credit card
+- Import expenses with a default payment method and optional bulk credit-card assignment
 - Brand icons auto-resolved via [simple-icons](https://simpleicons.org/) with initials fallback
 - Category grouping (Entertainment, Music, Productivity, …)
 - Monthly spending summary & pie chart
@@ -147,7 +150,11 @@ If you want to skip the CLI and use your cloud Supabase project directly:
 
 Open **SQL Editor** in your Supabase dashboard and run the contents of [`supabase/schema.sql`](supabase/schema.sql).
 
-This creates the `subscriptions` table, grants the `authenticated` role access, enables Row Level Security (each user sees only their own rows), and adds an `updated_at` trigger.
+This creates the `subscriptions`, `incomes`, and `credit_cards` tables, grants the `authenticated` role access, enables Row Level Security (each user sees only their own rows), and adds `updated_at` triggers.
+
+> Credit-card support in v1 stores payment method metadata on expenses (`bank` or `credit_card`). Statement-cycle payout projection is planned as a follow-up.
+
+For existing databases, run targeted incremental scripts from [`supabase/migrations`](supabase/migrations) (for example `2026-06-04-credit-cards-v1.sql`) instead of re-running the full schema blindly.
 
 ### Enable Google OAuth
 

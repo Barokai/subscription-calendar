@@ -1,5 +1,6 @@
 import { Subscription } from '@/lib/subscriptions';
 import { Income } from '@/lib/incomes';
+import { CreditCard } from '@/lib/credit-cards';
 
 const NOW = new Date().toISOString();
 
@@ -11,6 +12,8 @@ export const mockSubscriptions: Subscription[] = [
     amount: 4.33,
     currency: '€',
     frequency: 'monthly',
+    paymentMethod: 'bank',
+    creditCardId: null,
     dayOfMonth: 7,
     color: null,
     category: 'Entertainment',
@@ -26,6 +29,8 @@ export const mockSubscriptions: Subscription[] = [
     amount: 9.99,
     currency: '€',
     frequency: 'monthly',
+    paymentMethod: 'bank',
+    creditCardId: null,
     dayOfMonth: 12,
     color: null,
     category: 'Entertainment',
@@ -41,6 +46,8 @@ export const mockSubscriptions: Subscription[] = [
     amount: 95.88,
     currency: '€',
     frequency: 'yearly',
+    paymentMethod: 'bank',
+    creditCardId: null,
     dayOfMonth: 30,
     color: null,
     category: 'Shopping',
@@ -56,6 +63,8 @@ export const mockSubscriptions: Subscription[] = [
     amount: 29.99,
     currency: '€',
     frequency: 'monthly',
+    paymentMethod: 'bank',
+    creditCardId: null,
     dayOfMonth: 24,
     color: null,
     category: 'Productivity',
@@ -71,6 +80,8 @@ export const mockSubscriptions: Subscription[] = [
     amount: 89.90,
     currency: '€',
     frequency: 'yearly',
+    paymentMethod: 'bank',
+    creditCardId: null,
     dayOfMonth: 7,
     color: null,
     category: 'Entertainment',
@@ -86,6 +97,8 @@ export const mockSubscriptions: Subscription[] = [
     amount: 60.66,
     currency: '€',
     frequency: 'quarterly',
+    paymentMethod: 'bank',
+    creditCardId: null,
     dayOfMonth: 12,
     color: '#BADA55',
     category: 'Health & Fitness',
@@ -123,3 +136,23 @@ export const mockIncomes: Income[] = [
   },
 ];
 
+export const mockCreditCards: CreditCard[] = [
+  {
+    id: 'card-1',
+    userId: 'demo',
+    name: 'Visa Classic',
+    statementDay: 25,
+    dueDay: 5,
+    createdAt: NOW,
+    updatedAt: NOW,
+  },
+  {
+    id: 'card-2',
+    userId: 'demo',
+    name: 'Mastercard Gold',
+    statementDay: 15,
+    dueDay: 28,
+    createdAt: NOW,
+    updatedAt: NOW,
+  },
+];

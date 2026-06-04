@@ -14,6 +14,7 @@ import {
 } from "@/lib/csv-import";
 import { Subscription, SubscriptionInput } from "@/lib/subscriptions";
 import { Income, IncomeInput } from "@/lib/incomes";
+import { CreditCard } from "@/lib/credit-cards";
 import { renderSubscriptionIcon } from "./icon-utils";
 import { useI18n } from "@/lib/i18n";
 import { useEscapeKey } from "@/hooks/useEscapeKey";
@@ -25,6 +26,7 @@ interface ImportModalProps {
   isDarkMode: boolean;
   existingSubscriptions: Subscription[];
   existingIncomes: Income[];
+  creditCards: CreditCard[];
   onImport: (subscriptions: SubscriptionInput[]) => Promise<void>;
   onImportIncomes?: (incomes: IncomeInput[]) => Promise<void>;
   onCancel: () => void;
@@ -73,6 +75,7 @@ const ImportModal: React.FC<ImportModalProps> = ({
   isDarkMode,
   existingSubscriptions,
   existingIncomes,
+  creditCards,
   onImport,
   onImportIncomes,
   onCancel,
@@ -90,6 +93,8 @@ const ImportModal: React.FC<ImportModalProps> = ({
 
   const [pivotType, setPivotType] = useState<PivotType>("expenses");
   const [defaultDayOfMonth, setDefaultDayOfMonth] = useState("1");
+  const [importPaymentMethod, setImportPaymentMethod] = useState<"bank" | "credit_card">("bank");
+  const [importCreditCardId, setImportCreditCardId] = useState("");
 
   const bg = isDarkMode ? "bg-gray-900 text-white" : "bg-white text-gray-800";
   const inputCls = `w-full px-3 py-2 rounded-md border text-sm ${isDarkMode ? "bg-gray-800 border-gray-600 text-white" : "bg-gray-50 border-gray-300 text-gray-900"}`;
@@ -209,10 +214,28 @@ const ImportModal: React.FC<ImportModalProps> = ({
           .map((p) => pivotToIncomeInput(p, day));
         if (onImportIncomes) { await onImportIncomes(inputs); }
       } else {
+        if (importPaymentMethod === "credit_card" && !importCreditCardId) {
+          setError(t.importModal.errorCreditCardRequired);
+          setSaving(false);
+          return;
+        }
+        const assignedCardId = importPaymentMethod === "credit_card" ? importCreditCardId : null;
         const inputs: SubscriptionInput[] =
           format === "pivot"
-            ? pivotRows.filter((_, i) => selected.has(i)).map((p) => pivotToExpenseInput(p, day))
-            : bankCandidates.filter((_, i) => selected.has(i)).map(toInput);
+            ? pivotRows
+                .filter((_, i) => selected.has(i))
+                .map((p) => ({
+                  ...pivotToExpenseInput(p, day),
+                  paymentMethod: importPaymentMethod,
+                  creditCardId: assignedCardId,
+                }))
+            : bankCandidates
+                .filter((_, i) => selected.has(i))
+                .map((candidate) => ({
+                  ...toInput(candidate),
+                  paymentMethod: importPaymentMethod,
+                  creditCardId: assignedCardId,
+                }));
         await onImport(inputs);
       }
     } catch (err) {
@@ -321,7 +344,7 @@ const ImportModal: React.FC<ImportModalProps> = ({
                       <option value="income">{t.importModal.pivotTypeIncome}</option>
                     </select>
                   </div>
-                  <div className="w-28">
+                  <div className="w-32">
                     <label className="block text-xs text-gray-400 mb-1">{t.importModal.defaultDayLabel}</label>
                     <input
                       type="number"
@@ -332,6 +355,47 @@ const ImportModal: React.FC<ImportModalProps> = ({
                       onChange={(e) => setDefaultDayOfMonth(e.target.value)}
                     />
                   </div>
+                </div>
+              )}
+
+              {(format === "bank" || (format === "pivot" && pivotType === "expenses")) && (
+                <div className={`grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 rounded-lg ${isDarkMode ? "bg-gray-800" : "bg-gray-100"}`}>
+                  <div>
+                    <label className="block text-xs text-gray-400 mb-1">{t.importModal.importPaymentMethodLabel}</label>
+                    <select
+                      className={inputCls}
+                      value={importPaymentMethod}
+                      onChange={(e) => {
+                        const nextMethod = e.target.value as "bank" | "credit_card";
+                        setImportPaymentMethod(nextMethod);
+                        if (nextMethod === "bank") {
+                          setImportCreditCardId("");
+                        }
+                      }}
+                    >
+                      <option value="bank">{t.importModal.importPaymentMethodBank}</option>
+                      <option value="credit_card">{t.importModal.importPaymentMethodCreditCard}</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-400 mb-1">{t.importModal.importCreditCardLabel}</label>
+                    <select
+                      className={`${inputCls} ${importPaymentMethod !== "credit_card" ? "opacity-60 cursor-not-allowed" : ""}`}
+                      value={importPaymentMethod === "credit_card" ? importCreditCardId : ""}
+                      onChange={(e) => setImportCreditCardId(e.target.value)}
+                      disabled={importPaymentMethod !== "credit_card"}
+                    >
+                      <option value="">{t.importModal.importCreditCardPlaceholder}</option>
+                      {creditCards.map((card) => (
+                        <option key={card.id} value={card.id}>
+                          {card.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  {importPaymentMethod === "credit_card" && creditCards.length === 0 && (
+                    <p className="text-xs text-amber-400 sm:col-span-2">{t.importModal.noCreditCardsHint}</p>
+                  )}
                 </div>
               )}
 

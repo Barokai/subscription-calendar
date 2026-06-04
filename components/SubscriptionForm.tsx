@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { Subscription, SubscriptionInput } from "@/lib/subscriptions";
+import { CreditCard } from "@/lib/credit-cards";
 import { renderSubscriptionIcon } from "./icon-utils";
 import { useI18n } from "@/lib/i18n";
 import { useEscapeKey } from "@/hooks/useEscapeKey";
@@ -11,6 +12,7 @@ const CURRENCIES = ["EUR", "USD", "GBP", "CHF", "JPY", "CAD", "AUD"];
 interface SubscriptionFormProps {
   isDarkMode: boolean;
   subscription?: Subscription;
+  creditCards: CreditCard[];
   onSave: (input: SubscriptionInput) => Promise<void>;
   onCancel: () => void;
 }
@@ -18,6 +20,7 @@ interface SubscriptionFormProps {
 const SubscriptionForm: React.FC<SubscriptionFormProps> = ({
   isDarkMode,
   subscription,
+  creditCards,
   onSave,
   onCancel,
 }) => {
@@ -52,6 +55,8 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({
   const [currency, setCurrency] = useState(subscription?.currency ?? "EUR");
   const [frequency, setFrequency] = useState(subscription?.frequency ?? "monthly");
   const [isOneTime, setIsOneTime] = useState(subscription?.frequency === "once");
+  const [paymentMethod, setPaymentMethod] = useState<"bank" | "credit_card">(subscription?.paymentMethod ?? "bank");
+  const [creditCardId, setCreditCardId] = useState(subscription?.creditCardId ?? "");
   const [dayOfMonth, setDayOfMonth] = useState(subscription?.dayOfMonth?.toString() ?? "1");
   const [category, setCategory] = useState(subscription?.category ?? "");
   const [customCategory, setCustomCategory] = useState("");
@@ -76,6 +81,11 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({
 
     const effectiveFrequency = isOneTime ? "once" : frequency;
     const effectiveEndDate = isOneTime ? startDate : (endDate || null);
+    const effectiveCreditCardId = paymentMethod === "credit_card" ? creditCardId || null : null;
+    if (paymentMethod === "credit_card" && !effectiveCreditCardId) {
+      setError(t.subscriptionForm.errorCreditCardRequired);
+      return;
+    }
 
     setSaving(true);
     try {
@@ -84,6 +94,8 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({
         amount: parsedAmount,
         currency,
         frequency: effectiveFrequency,
+        paymentMethod,
+        creditCardId: effectiveCreditCardId,
         dayOfMonth: parsedDay,
         category: effectiveCategory || null,
         startDate,
@@ -179,6 +191,45 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({
                 )}
               </select>
             </div>
+
+            <div className="flex gap-2">
+              <div className="flex-1">
+                <label className={labelCls}>{t.subscriptionForm.paymentMethodLabel}</label>
+                <select
+                  className={inputCls}
+                  value={paymentMethod}
+                  onChange={(e) => {
+                    const nextMethod = e.target.value as "bank" | "credit_card";
+                    setPaymentMethod(nextMethod);
+                    if (nextMethod === "bank") {
+                      setCreditCardId("");
+                    }
+                  }}
+                >
+                  <option value="bank">{t.subscriptionForm.paymentMethodBank}</option>
+                  <option value="credit_card">{t.subscriptionForm.paymentMethodCreditCard}</option>
+                </select>
+              </div>
+              <div className="flex-1">
+                <label className={labelCls}>{t.subscriptionForm.creditCardLabel}</label>
+                <select
+                  className={`${inputCls} ${paymentMethod !== "credit_card" ? "opacity-60 cursor-not-allowed" : ""}`}
+                  value={paymentMethod === "credit_card" ? creditCardId : ""}
+                  onChange={(e) => setCreditCardId(e.target.value)}
+                  disabled={paymentMethod !== "credit_card"}
+                >
+                  <option value="">{t.subscriptionForm.creditCardPlaceholder}</option>
+                  {creditCards.map((card) => (
+                    <option key={card.id} value={card.id}>
+                      {card.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            {paymentMethod === "credit_card" && creditCards.length === 0 && (
+              <p className="text-xs text-amber-400">{t.subscriptionForm.noCreditCardsHint}</p>
+            )}
             <div className="w-24">
               <label className={labelCls}>{t.subscriptionForm.dayOfMonthLabel}</label>
               <input

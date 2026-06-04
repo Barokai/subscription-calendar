@@ -12,7 +12,7 @@ import {
 } from "./settings-service";
 import { Subscription } from "@/lib/subscriptions";
 import { isPaymentInMonth } from "@/lib/frequency-utils";
-import { mockSubscriptions, mockIncomes } from "../data/mock-subscriptions";
+import { mockSubscriptions, mockIncomes, mockCreditCards } from "../data/mock-subscriptions";
 import {
   parseDate,
   getFirstDayOfWeek,
@@ -28,9 +28,11 @@ import styles from "../styles/calendar.module.css";
 import SpendingChart from "./spending-chart";
 import { useSubscriptions } from "@/hooks/useSubscriptions";
 import { useIncomes } from "@/hooks/useIncomes";
+import { useCreditCards } from "@/hooks/useCreditCards";
 import SubscriptionForm from "./SubscriptionForm";
 import ImportModal from "./ImportModal";
 import IncomeManager from "./IncomeManager";
+import CreditCardManager from "./CreditCardManager";
 import CashFlowProjection from "./CashFlowProjection";
 import { createClient } from "@/lib/supabase/client";
 import { useI18n } from "@/lib/i18n";
@@ -76,6 +78,7 @@ const SubscriptionCalendar: React.FC = () => {
 
   const { subscriptions, loading, error, add, update, remove } = useSubscriptions(inDemoMode, mockSubscriptions);
   const { incomes, add: addIncome, update: updateIncome, remove: removeIncome } = useIncomes(inDemoMode, mockIncomes);
+  const { creditCards, add: addCreditCard, update: updateCreditCard, remove: removeCreditCard } = useCreditCards(inDemoMode, mockCreditCards);
 
   // Load user preferences
   useEffect(() => {
@@ -557,10 +560,9 @@ const SubscriptionCalendar: React.FC = () => {
         return;
       }
 
-      await Promise.all([
-        ...subscriptions.map((subscription) => remove(subscription.id)),
-        ...incomes.map((income) => removeIncome(income.id)),
-      ]);
+      await Promise.all(subscriptions.map((subscription) => remove(subscription.id)));
+      await Promise.all(incomes.map((income) => removeIncome(income.id)));
+      await Promise.all(creditCards.map((card) => removeCreditCard(card.id)));
 
       setShowResetConfirm(false);
       setSelectedSubscription(null);
@@ -744,6 +746,10 @@ const SubscriptionCalendar: React.FC = () => {
                     <span className={isDarkMode ? "text-gray-300" : "text-gray-600"}>{t.calendar.resetIncomeLabel}</span>
                     <span className="font-mono">{incomes.length} → 0</span>
                   </div>
+                  <div className="flex items-center justify-between gap-3">
+                    <span className={isDarkMode ? "text-gray-300" : "text-gray-600"}>{t.calendar.resetCreditCardsLabel}</span>
+                    <span className="font-mono">{creditCards.length} → 0</span>
+                  </div>
                 </div>
               </div>
 
@@ -805,6 +811,7 @@ const SubscriptionCalendar: React.FC = () => {
           <SubscriptionForm
             isDarkMode={isDarkMode}
             subscription={editingSubscription ?? undefined}
+            creditCards={creditCards}
             onSave={async (input) => {
               if (editingSubscription) {
                 await update(editingSubscription.id, input);
@@ -824,6 +831,7 @@ const SubscriptionCalendar: React.FC = () => {
             isDarkMode={isDarkMode}
             existingSubscriptions={subscriptions}
             existingIncomes={incomes}
+            creditCards={creditCards}
             onImport={async (inputs) => {
               for (const input of inputs) {
                 await add(input);
@@ -1058,6 +1066,15 @@ const SubscriptionCalendar: React.FC = () => {
             onAdd={addIncome}
             onUpdate={updateIncome}
             onRemove={removeIncome}
+          />
+
+          <CreditCardManager
+            creditCards={creditCards}
+            subscriptions={subscriptions}
+            isDarkMode={isDarkMode}
+            onAdd={addCreditCard}
+            onUpdate={updateCreditCard}
+            onRemove={removeCreditCard}
           />
 
           {/* Cash Flow Projection */}
