@@ -191,6 +191,11 @@ export const en = {
     frequencyOnce: "one-time",
     frequencyBiweekly: "biweekly",
     frequencyDaily: "daily",
+    ignoreButton: "Ignore",
+    ignoredCount: "{count} ignored",
+    showIgnored: "Show ignored",
+    hideIgnored: "Hide ignored",
+    restoreButton: "Restore",
   },
   trends: {
     title: "Spending Trends",

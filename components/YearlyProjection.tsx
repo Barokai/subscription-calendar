@@ -1,10 +1,12 @@
 "use client";
 
-import React, { useMemo } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import { Subscription } from "@/lib/subscriptions";
 import { isPaymentInMonth } from "@/lib/frequency-utils";
 import { parseDate } from "./date-utils";
 import { useI18n } from "@/lib/i18n";
+
+const IGNORED_KEY = "savings_ignored_categories";
 
 interface YearlyProjectionProps {
   subscriptions: Subscription[];
@@ -38,6 +40,29 @@ const YearlyProjection: React.FC<YearlyProjectionProps> = ({
   isDarkMode,
 }) => {
   const { t, tpl } = useI18n();
+
+  // Ignored savings suggestions — persisted in localStorage
+  const [ignoredCategories, setIgnoredCategories] = useState<Set<string>>(() => {
+    try {
+      const raw = localStorage.getItem(IGNORED_KEY);
+      return new Set(raw ? JSON.parse(raw) : []);
+    } catch {
+      return new Set();
+    }
+  });
+  const [showIgnored, setShowIgnored] = useState(false);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(IGNORED_KEY, JSON.stringify([...ignoredCategories]));
+    } catch { /* storage unavailable */ }
+  }, [ignoredCategories]);
+
+  const ignore = (cat: string) =>
+    setIgnoredCategories((prev) => new Set([...prev, cat]));
+
+  const restore = (cat: string) =>
+    setIgnoredCategories((prev) => { const n = new Set(prev); n.delete(cat); return n; });
   const formatFrequencyLabel = (frequency: string): string => {
     switch (frequency) {
       case "once": return t.yearlyProjection.frequencyOnce;
@@ -168,27 +193,79 @@ const YearlyProjection: React.FC<YearlyProjectionProps> = ({
       {duplicateCategories.length > 0 && (
         <div className="px-4 pb-4 space-y-2">
           <p className={`text-xs uppercase tracking-wider ${muted}`}>{t.yearlyProjection.savingsInsights}</p>
-          {duplicateCategories.map(([cat, subs]) => {
-            const catAnnual = subs.reduce((s, sub) => s + annualCost(sub), 0);
-            const cheapest = [...subs].sort((a, b) => annualCost(a) - annualCost(b))[0];
-            const saveable = catAnnual - annualCost(cheapest);
-            return (
-              <div
-                key={cat}
-                className={`flex items-start gap-2 p-3 rounded-lg border ${border} ${cardBg}`}
-              >
-                <span className="text-yellow-400 mt-0.5">⚠</span>
-                <div>
-                  <p className={`text-sm font-medium ${subtext}`}>
-                    {tpl(t.yearlyProjection.savingsMessage, { count: subs.length, category: cat, amount: fmt(saveable) })}
-                  </p>
-                  <p className={`text-xs ${muted}`}>
-                    {subs.map((s) => tpl(t.yearlyProjection.savingsDetail, { name: s.name, amount: fmtExact(s.amount), frequency: formatFrequencyLabel(s.frequency) })).join(" · ")}
-                  </p>
+
+          {/* Visible suggestions */}
+          {duplicateCategories
+            .filter(([cat]) => !ignoredCategories.has(cat))
+            .map(([cat, subs]) => {
+              const catAnnual = subs.reduce((s, sub) => s + annualCost(sub), 0);
+              const cheapest = [...subs].sort((a, b) => annualCost(a) - annualCost(b))[0];
+              const saveable = catAnnual - annualCost(cheapest);
+              return (
+                <div
+                  key={cat}
+                  className={`flex items-start gap-2 p-3 rounded-lg border ${border} ${cardBg}`}
+                >
+                  <span className="text-yellow-400 mt-0.5 flex-shrink-0">⚠</span>
+                  <div className="flex-1 min-w-0">
+                    <p className={`text-sm font-medium ${subtext}`}>
+                      {tpl(t.yearlyProjection.savingsMessage, { count: subs.length, category: cat, amount: fmt(saveable) })}
+                    </p>
+                    <p className={`text-xs ${muted}`}>
+                      {subs.map((s) => tpl(t.yearlyProjection.savingsDetail, { name: s.name, amount: fmtExact(s.amount), frequency: formatFrequencyLabel(s.frequency) })).join(" · ")}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => ignore(cat)}
+                    className={`flex-shrink-0 text-xs px-2 py-1 rounded border transition-colors ${
+                      isDarkMode
+                        ? "border-gray-600 text-gray-400 hover:bg-gray-700 hover:text-gray-200"
+                        : "border-gray-300 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+                    }`}
+                    title={t.yearlyProjection.ignoreButton}
+                  >
+                    {t.yearlyProjection.ignoreButton}
+                  </button>
                 </div>
-              </div>
-            );
-          })}
+              );
+            })}
+
+          {/* Ignored suggestions toggle + restore */}
+          {ignoredCategories.size > 0 && (
+            <div>
+              <button
+                onClick={() => setShowIgnored((v) => !v)}
+                className={`text-xs ${muted} hover:underline`}
+              >
+                {showIgnored
+                  ? t.yearlyProjection.hideIgnored
+                  : tpl(t.yearlyProjection.ignoredCount, { count: ignoredCategories.size }) + " — " + t.yearlyProjection.showIgnored}
+              </button>
+
+              {showIgnored && (
+                <div className="mt-2 space-y-1.5">
+                  {[...ignoredCategories].map((cat) => (
+                    <div
+                      key={cat}
+                      className={`flex items-center justify-between gap-2 px-3 py-2 rounded-lg border ${border} opacity-50`}
+                    >
+                      <span className={`text-sm ${subtext} line-through`}>{cat}</span>
+                      <button
+                        onClick={() => restore(cat)}
+                        className={`text-xs px-2 py-0.5 rounded border transition-colors ${
+                          isDarkMode
+                            ? "border-gray-600 text-gray-400 hover:bg-gray-700 hover:text-gray-200"
+                            : "border-gray-300 text-gray-500 hover:bg-gray-100"
+                        }`}
+                      >
+                        {t.yearlyProjection.restoreButton}
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       )}
 

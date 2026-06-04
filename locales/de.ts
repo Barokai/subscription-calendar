@@ -195,6 +195,11 @@ export const de: Locale = {
     frequencyOnce: "einmalig",
     frequencyBiweekly: "zweiwöchentlich",
     frequencyDaily: "täglich",
+    ignoreButton: "Ignorieren",
+    ignoredCount: "{count} ignoriert",
+    showIgnored: "Ignorierte anzeigen",
+    hideIgnored: "Ignorierte ausblenden",
+    restoreButton: "Wiederherstellen",
   },
   trends: {
     title: "Ausgabentrends",
