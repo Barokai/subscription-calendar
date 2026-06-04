@@ -17,6 +17,7 @@ import { Income, IncomeInput } from "@/lib/incomes";
 import { CreditCard } from "@/lib/credit-cards";
 import { renderSubscriptionIcon } from "./icon-utils";
 import { useI18n } from "@/lib/i18n";
+import ModalBackdrop from "./modal-backdrop";
 import { useEscapeKey } from "@/hooks/useEscapeKey";
 
 type Step = "upload" | "preview";
@@ -265,8 +266,8 @@ const ImportModal: React.FC<ImportModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black bg-opacity-60 p-2 sm:p-4">
-      <div className={`w-full max-w-lg rounded-xl shadow-2xl flex flex-col max-h-[90vh] ${bg}`}>
+    <ModalBackdrop panelClassName="max-w-lg">
+      <div className={`w-full flex flex-col max-h-[90vh] ${bg}`}>
         {/* Header */}
         <div className="flex items-center p-5 border-b border-gray-700 flex-shrink-0">
           <h2 className="text-lg font-bold flex-1">
@@ -504,7 +505,7 @@ const ImportModal: React.FC<ImportModalProps> = ({
           )}
         </div>
       </div>
-    </div>
+    </ModalBackdrop>
   );
 };
 

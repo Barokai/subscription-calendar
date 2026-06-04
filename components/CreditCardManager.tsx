@@ -5,6 +5,7 @@ import { CreditCard, CreditCardInput } from "@/lib/credit-cards";
 import { Subscription } from "@/lib/subscriptions";
 import { useI18n } from "@/lib/i18n";
 import { useEscapeKey } from "@/hooks/useEscapeKey";
+import ModalBackdrop from "./modal-backdrop";
 
 interface CreditCardManagerProps {
   creditCards: CreditCard[];
@@ -182,8 +183,8 @@ const CreditCardManager: React.FC<CreditCardManagerProps> = ({
       {error && <p className="px-4 py-3 text-sm text-red-400">{error}</p>}
 
       {showForm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60">
-          <div className={`w-full max-w-md rounded-xl shadow-xl p-6 ${bg}`}>
+        <ModalBackdrop onClose={closeForm} panelClassName="max-w-lg">
+          <div className={`w-full p-6 ${bg}`}>
             <h3 className="text-lg font-bold mb-4">
               {editId ? t.creditCards.editTitle : t.creditCards.addTitle}
             </h3>
@@ -240,7 +241,7 @@ const CreditCardManager: React.FC<CreditCardManagerProps> = ({
               </div>
             </form>
           </div>
-        </div>
+        </ModalBackdrop>
       )}
     </div>
   );
