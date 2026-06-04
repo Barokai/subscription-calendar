@@ -72,6 +72,8 @@ export function useSubscriptions(demoMode: boolean, mockData: Subscription[]) {
       amount: input.amount,
       currency: input.currency,
       frequency: input.frequency,
+      paymentMethod: input.paymentMethod ?? "bank",
+      creditCardId: input.paymentMethod === "credit_card" ? input.creditCardId ?? null : null,
       dayOfMonth: input.dayOfMonth,
       color: input.color ?? null,
       category: input.category ?? null,
@@ -111,6 +113,15 @@ export function useSubscriptions(demoMode: boolean, mockData: Subscription[]) {
               ? {
                   ...s,
                   ...input,
+                  paymentMethod: input.paymentMethod ?? s.paymentMethod,
+                  creditCardId:
+                    input.paymentMethod === "credit_card"
+                      ? input.creditCardId ?? s.creditCardId
+                      : input.paymentMethod === "bank"
+                      ? null
+                      : input.creditCardId !== undefined
+                      ? input.creditCardId ?? null
+                      : s.creditCardId,
                   color: input.color ?? null,
                   category: input.category ?? null,
                   endDate: input.endDate ?? null,
@@ -178,6 +189,15 @@ export function useSubscriptions(demoMode: boolean, mockData: Subscription[]) {
             ? {
                 ...s,
                 ...input,
+                paymentMethod: input.paymentMethod ?? s.paymentMethod,
+                creditCardId:
+                  input.paymentMethod === "credit_card"
+                    ? input.creditCardId ?? s.creditCardId
+                    : input.paymentMethod === "bank"
+                    ? null
+                    : input.creditCardId !== undefined
+                    ? input.creditCardId ?? null
+                    : s.creditCardId,
                 color: input.color !== undefined ? input.color ?? null : s.color,
                 category: input.category !== undefined ? input.category ?? null : s.category,
                 endDate: input.endDate !== undefined ? input.endDate ?? null : s.endDate,

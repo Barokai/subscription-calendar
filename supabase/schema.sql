@@ -11,6 +11,8 @@ create table if not exists public.subscriptions (
   amount       numeric(10,2) not null,
   currency     text        not null default 'EUR',
   frequency    text        not null default 'monthly',
+  payment_method text      not null default 'bank',
+  credit_card_id uuid,
   day_of_month integer     not null,
   color        text,
   category     text,
@@ -19,6 +21,49 @@ create table if not exists public.subscriptions (
   created_at   timestamptz not null default now(),
   updated_at   timestamptz not null default now()
 );
+
+alter table public.subscriptions
+  add column if not exists payment_method text not null default 'bank';
+
+alter table public.subscriptions
+  add column if not exists credit_card_id uuid;
+
+update public.subscriptions
+set payment_method = 'bank'
+where payment_method is null;
+
+do $$
+begin
+  if not exists (
+    select 1
+    from pg_constraint
+    where conname = 'subscriptions_payment_method_check'
+      and conrelid = 'public.subscriptions'::regclass
+  ) then
+    alter table public.subscriptions
+      add constraint subscriptions_payment_method_check
+      check (payment_method in ('bank', 'credit_card'));
+  end if;
+end
+$$;
+
+do $$
+begin
+  if not exists (
+    select 1
+    from pg_constraint
+    where conname = 'subscriptions_payment_method_card_pair_check'
+      and conrelid = 'public.subscriptions'::regclass
+  ) then
+    alter table public.subscriptions
+      add constraint subscriptions_payment_method_card_pair_check
+      check (
+        (payment_method = 'bank' and credit_card_id is null)
+        or (payment_method = 'credit_card' and credit_card_id is not null)
+      );
+  end if;
+end
+$$;
 
 -- Grant access to authenticated users (required alongside RLS)
 grant select, insert, update, delete on public.subscriptions to authenticated;
@@ -48,6 +93,9 @@ create trigger set_updated_at
 -- Useful index for per-user queries
 create index if not exists subscriptions_user_id_idx
   on public.subscriptions(user_id);
+
+create index if not exists subscriptions_credit_card_id_idx
+  on public.subscriptions(credit_card_id);
 
 -- ---------------------------------------------------------------------------
 -- Income sources
@@ -82,3 +130,56 @@ create trigger set_incomes_updated_at
 
 create index if not exists incomes_user_id_idx
   on public.incomes(user_id);
+
+-- ---------------------------------------------------------------------------
+-- Credit cards
+-- ---------------------------------------------------------------------------
+
+create table if not exists public.credit_cards (
+  id           uuid        primary key default gen_random_uuid(),
+  user_id      uuid        not null references auth.users(id) on delete cascade,
+  name         text        not null,
+  statement_day integer    not null,
+  due_day      integer     not null,
+  created_at   timestamptz not null default now(),
+  updated_at   timestamptz not null default now(),
+  constraint credit_cards_statement_day_check check (statement_day between 1 and 31),
+  constraint credit_cards_due_day_check check (due_day between 1 and 31)
+);
+
+grant select, insert, update, delete on public.credit_cards to authenticated;
+
+alter table public.credit_cards enable row level security;
+
+create policy "Users can manage their own credit cards"
+  on public.credit_cards
+  for all
+  using  (auth.uid() = user_id)
+  with check (auth.uid() = user_id);
+
+create trigger set_credit_cards_updated_at
+  before update on public.credit_cards
+  for each row execute function public.handle_updated_at();
+
+create index if not exists credit_cards_user_id_idx
+  on public.credit_cards(user_id);
+
+create unique index if not exists credit_cards_user_id_id_key
+  on public.credit_cards(user_id, id);
+
+do $$
+begin
+  if not exists (
+    select 1
+    from pg_constraint
+    where conname = 'subscriptions_credit_card_owner_fk'
+      and conrelid = 'public.subscriptions'::regclass
+  ) then
+    alter table public.subscriptions
+      add constraint subscriptions_credit_card_owner_fk
+      foreign key (user_id, credit_card_id)
+      references public.credit_cards(user_id, id)
+      on delete restrict;
+  end if;
+end
+$$;

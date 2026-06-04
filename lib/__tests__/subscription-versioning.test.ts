@@ -14,6 +14,8 @@ function buildSubscription(overrides: Partial<Subscription>): Subscription {
     amount: 9.99,
     currency: "EUR",
     frequency: "monthly",
+    paymentMethod: "bank",
+    creditCardId: null,
     dayOfMonth: 10,
     color: null,
     category: null,
