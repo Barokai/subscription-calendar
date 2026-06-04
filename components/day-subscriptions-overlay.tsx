@@ -51,8 +51,12 @@ const DaySubscriptionsOverlay: React.FC<DaySubscriptionsOverlayProps> = ({
   return (
     <div
       className="fixed inset-0 z-50 flex items-end sm:items-center justify-center"
-      style={{ background: 'linear-gradient(to bottom, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0.55) 100%)', backdropFilter: 'blur(2px)' }}
+      style={{
+        background: 'linear-gradient(to bottom, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0.55) 100%)',
+        backdropFilter: 'blur(2px)',
+      }}
       onClick={onClose}
+      data-component="day-subscriptions-overlay"
     >
       <div
         className={`w-full sm:max-w-lg rounded-t-2xl sm:rounded-2xl shadow-2xl flex flex-col ${panelBg}`}
@@ -99,7 +103,7 @@ const DaySubscriptionsOverlay: React.FC<DaySubscriptionsOverlayProps> = ({
                   <div
                     key={sub.id}
                     className={`p-3 rounded-lg ${rowBg} cursor-pointer hover:opacity-90 transition-opacity`}
-                    onClick={(e) => onSubscriptionClick(sub, e)}
+                    onClick={(e) => { onClose(); onSubscriptionClick(sub, e); }}
                   >
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 flex-shrink-0">

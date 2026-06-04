@@ -185,6 +185,7 @@ const SubscriptionDetail: React.FC<SubscriptionDetailProps> = ({
         transform: transform,
       }}
       data-subscription-detail="true"
+      data-component="subscription-detail"
     >
       {positionType === "click" && onClose && (
         <button

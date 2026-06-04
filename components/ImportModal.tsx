@@ -267,7 +267,7 @@ const ImportModal: React.FC<ImportModalProps> = ({
 
   return (
     <ModalBackdrop panelClassName="max-w-lg">
-      <div className={`w-full flex flex-col max-h-[90vh] ${bg}`}>
+      <div className={`w-full flex flex-col max-h-[90vh] ${bg}`} data-component="import-modal">
         {/* Header */}
         <div className="flex items-center p-5 border-b border-gray-700 flex-shrink-0">
           <h2 className="text-lg font-bold flex-1">

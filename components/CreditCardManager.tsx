@@ -184,7 +184,7 @@ const CreditCardManager: React.FC<CreditCardManagerProps> = ({
 
       {showForm && (
         <ModalBackdrop onClose={closeForm} panelClassName="max-w-lg">
-          <div className={`w-full p-6 ${bg}`}>
+          <div className={`w-full p-6 ${bg}`} data-component="credit-card-manager-form">
             <h3 className="text-lg font-bold mb-4">
               {editId ? t.creditCards.editTitle : t.creditCards.addTitle}
             </h3>

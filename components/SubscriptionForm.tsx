@@ -59,8 +59,12 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({
   const [paymentMethod, setPaymentMethod] = useState<"bank" | "credit_card">(subscription?.paymentMethod ?? "bank");
   const [creditCardId, setCreditCardId] = useState(subscription?.creditCardId ?? "");
   const [dayOfMonth, setDayOfMonth] = useState(subscription?.dayOfMonth?.toString() ?? "1");
-  const [category, setCategory] = useState(subscription?.category ?? "");
-  const [customCategory, setCustomCategory] = useState("");
+
+  // If the stored category isn't in the predefined list it's a custom value
+  const initialCategoryValue = subscription?.category ?? "";
+  const initialIsCustomCategory = initialCategoryValue !== "" && !CATEGORIES.includes(initialCategoryValue);
+  const [category, setCategory] = useState(initialIsCustomCategory ? "__custom__" : initialCategoryValue);
+  const [customCategory, setCustomCategory] = useState(initialIsCustomCategory ? initialCategoryValue : "");
   const [startDate, setStartDate] = useState(subscription?.startDate ?? new Date().toISOString().slice(0, 10));
   const [endDate, setEndDate] = useState(subscription?.endDate ?? "");
   const [color, setColor] = useState(subscription?.color ?? "");
@@ -117,7 +121,7 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({
 
   return (
     <ModalBackdrop onClose={onCancel} panelClassName="max-w-lg">
-      <div className={`w-full p-5 ${bg}`}>
+      <div className={`w-full p-5 ${bg}`} data-component="subscription-form">
         <div className="flex items-center mb-4">
           {name && (
             <div className="w-8 h-8 mr-3 flex-shrink-0">
@@ -144,7 +148,7 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({
           {/* Amount + Currency */}
           <div className="flex gap-2">
             <div className="flex-1">
-              <label className={labelCls}>Amount *</label>
+              <label className={labelCls}>{t.subscriptionForm.amountLabel}</label>
               <input
                 className={inputCls}
                 type="number"
@@ -164,18 +168,27 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({
           </div>
 
           {/* One-time toggle */}
-          <div className="flex items-center justify-between">
-            <label className={labelCls}>{t.subscriptionForm.oneTimeLabel}</label>
-            <input
-              type="checkbox"
-              checked={isOneTime}
-              onChange={(e) => setIsOneTime(e.target.checked)}
-              className="h-4 w-4 accent-blue-500"
-            />
+          <div className="flex items-center justify-between py-1 gap-3">
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium">{t.subscriptionForm.oneTimeLabel}</p>
+              <p className="text-xs text-gray-500 leading-snug">{t.subscriptionForm.oneTimeHelp}</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setIsOneTime(!isOneTime)}
+              className={`relative inline-flex h-6 w-11 flex-shrink-0 items-center rounded-full transition-colors focus:outline-none ${
+                isOneTime ? "bg-blue-600" : "bg-gray-600"
+              }`}
+              aria-checked={isOneTime}
+              role="switch"
+            >
+              <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${
+                isOneTime ? "translate-x-6" : "translate-x-1"
+              }`} />
+            </button>
           </div>
-          <p className="text-xs text-gray-500 -mt-2">{t.subscriptionForm.oneTimeHelp}</p>
 
-          {/* Frequency + Day */}
+          {/* Frequency + Day of month */}
           <div className="flex gap-2">
             <div className="flex-1">
               <label className={labelCls}>{t.subscriptionForm.frequencyLabel}</label>
@@ -192,45 +205,6 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({
                 )}
               </select>
             </div>
-
-            <div className="flex gap-2">
-              <div className="flex-1">
-                <label className={labelCls}>{t.subscriptionForm.paymentMethodLabel}</label>
-                <select
-                  className={inputCls}
-                  value={paymentMethod}
-                  onChange={(e) => {
-                    const nextMethod = e.target.value as "bank" | "credit_card";
-                    setPaymentMethod(nextMethod);
-                    if (nextMethod === "bank") {
-                      setCreditCardId("");
-                    }
-                  }}
-                >
-                  <option value="bank">{t.subscriptionForm.paymentMethodBank}</option>
-                  <option value="credit_card">{t.subscriptionForm.paymentMethodCreditCard}</option>
-                </select>
-              </div>
-              <div className="flex-1">
-                <label className={labelCls}>{t.subscriptionForm.creditCardLabel}</label>
-                <select
-                  className={`${inputCls} ${paymentMethod !== "credit_card" ? "opacity-60 cursor-not-allowed" : ""}`}
-                  value={paymentMethod === "credit_card" ? creditCardId : ""}
-                  onChange={(e) => setCreditCardId(e.target.value)}
-                  disabled={paymentMethod !== "credit_card"}
-                >
-                  <option value="">{t.subscriptionForm.creditCardPlaceholder}</option>
-                  {creditCards.map((card) => (
-                    <option key={card.id} value={card.id}>
-                      {card.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-            {paymentMethod === "credit_card" && creditCards.length === 0 && (
-              <p className="text-xs text-amber-400">{t.subscriptionForm.noCreditCardsHint}</p>
-            )}
             <div className="w-24">
               <label className={labelCls}>{t.subscriptionForm.dayOfMonthLabel}</label>
               <input
@@ -243,6 +217,42 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({
               />
             </div>
           </div>
+
+          {/* Payment method + Credit card — own row */}
+          <div className="flex gap-2">
+            <div className="flex-1">
+              <label className={labelCls}>{t.subscriptionForm.paymentMethodLabel}</label>
+              <select
+                className={inputCls}
+                value={paymentMethod}
+                onChange={(e) => {
+                  const nextMethod = e.target.value as "bank" | "credit_card";
+                  setPaymentMethod(nextMethod);
+                  if (nextMethod === "bank") setCreditCardId("");
+                }}
+              >
+                <option value="bank">{t.subscriptionForm.paymentMethodBank}</option>
+                <option value="credit_card">{t.subscriptionForm.paymentMethodCreditCard}</option>
+              </select>
+            </div>
+            <div className="flex-1">
+              <label className={labelCls}>{t.subscriptionForm.creditCardLabel}</label>
+              <select
+                className={`${inputCls} ${paymentMethod !== "credit_card" ? "opacity-60 cursor-not-allowed" : ""}`}
+                value={paymentMethod === "credit_card" ? creditCardId : ""}
+                onChange={(e) => setCreditCardId(e.target.value)}
+                disabled={paymentMethod !== "credit_card"}
+              >
+                <option value="">{t.subscriptionForm.creditCardPlaceholder}</option>
+                {creditCards.map((card) => (
+                  <option key={card.id} value={card.id}>{card.name}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+          {paymentMethod === "credit_card" && creditCards.length === 0 && (
+            <p className="text-xs text-amber-400 -mt-1">{t.subscriptionForm.noCreditCardsHint}</p>
+          )}
 
           {/* Category */}
           <div>
