@@ -53,23 +53,17 @@ export const DayIcons: React.FC<{
   dayIncomes: Income[];
   expandedDays: Set<string>;
   dayKey: string;
-  handleSubscriptionHover: (
-    subscription: Subscription,
-    event: React.MouseEvent
-  ) => void;
+  handleSubscriptionHover: (subscription: Subscription, event: React.MouseEvent) => void;
   handleSubscriptionLeave: () => void;
-  handleSubscriptionClick: (
-    subscription: Subscription,
-    event: React.MouseEvent
-  ) => void;
-  handleSubscriptionDragStart: (
-    subscription: Subscription,
-    event: React.DragEvent<HTMLDivElement>
-  ) => void;
+  handleSubscriptionClick: (subscription: Subscription, event: React.MouseEvent) => void;
+  handleSubscriptionDragStart: (subscription: Subscription, event: React.DragEvent<HTMLDivElement>) => void;
   handleSubscriptionDragEnd: () => void;
   isSubscriptionEditable: (subscription: Subscription) => boolean;
   readOnlySuffixLabel: string;
   toggleDayExpansion: (dayKey: string) => void;
+  handleIncomeHover?: (income: Income, event: React.MouseEvent) => void;
+  handleIncomeLeave?: () => void;
+  handleIncomeClick?: (income: Income, event: React.MouseEvent) => void;
 }> = ({
   daySubscriptions,
   dayIncomes,
@@ -83,20 +77,19 @@ export const DayIcons: React.FC<{
   isSubscriptionEditable,
   readOnlySuffixLabel,
   toggleDayExpansion,
+  handleIncomeHover,
+  handleIncomeLeave,
+  handleIncomeClick,
 }) => {
   const { t, tpl } = useI18n();
   const isExpanded = expandedDays.has(dayKey);
 
   const hasMoreSubscriptions = daySubscriptions.length > MAX_VISIBLE_ICONS;
-  const visibleSubscriptions = isExpanded
-    ? daySubscriptions
-    : daySubscriptions.slice(0, MAX_VISIBLE_ICONS);
+  const visibleSubscriptions = isExpanded ? daySubscriptions : daySubscriptions.slice(0, MAX_VISIBLE_ICONS);
   const hiddenSubCount = daySubscriptions.length - MAX_VISIBLE_ICONS;
 
   const hasMoreIncomes = dayIncomes.length > MAX_VISIBLE_ICONS;
-  const visibleIncomes = isExpanded
-    ? dayIncomes
-    : dayIncomes.slice(0, MAX_VISIBLE_ICONS);
+  const visibleIncomes = isExpanded ? dayIncomes : dayIncomes.slice(0, MAX_VISIBLE_ICONS);
   const hiddenIncomeCount = dayIncomes.length - MAX_VISIBLE_ICONS;
 
   if (daySubscriptions.length === 0 && dayIncomes.length === 0) {
@@ -107,97 +100,74 @@ export const DayIcons: React.FC<{
     <>
       {daySubscriptions.length > 0 && (
         <div className={styles.subscriptionsContainer}>
-          <div className="inline-flex items-center">
-            {visibleSubscriptions.map((subscription) => {
-              const isEditable = isSubscriptionEditable(subscription);
-              return (
-                <div
-                  key={subscription.id}
-                  data-subscription-icon="true"
-                  draggable={isEditable}
-                  onMouseEnter={(e) => handleSubscriptionHover(subscription, e)}
-                  onMouseLeave={handleSubscriptionLeave}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleSubscriptionClick(subscription, e);
-                  }}
-                  onDragStart={(e) => {
-                    if (!isEditable) return;
-                    e.stopPropagation();
-                    handleSubscriptionDragStart(subscription, e);
-                  }}
-                  onDragEnd={handleSubscriptionDragEnd}
-                  className={`${styles.subscriptionIcon} ${isEditable ? "" : "opacity-70 cursor-default"}`}
-                  title={isEditable ? subscription.name : `${subscription.name} (${readOnlySuffixLabel})`}
-                >
-                  {renderSubscriptionIcon(subscription.name, subscription.color, "w-full h-full")}
-                </div>
-              );
-            })}
-
-            {hasMoreSubscriptions && (
+          {visibleSubscriptions.map((subscription) => {
+            const isEditable = isSubscriptionEditable(subscription);
+            return (
               <div
-                data-show-more="true"
+                key={subscription.id}
+                data-subscription-icon="true"
+                draggable={isEditable}
+                onMouseEnter={(e) => handleSubscriptionHover(subscription, e)}
+                onMouseLeave={handleSubscriptionLeave}
                 onClick={(e) => {
                   e.stopPropagation();
-                  toggleDayExpansion(dayKey);
+                  handleSubscriptionClick(subscription, e);
                 }}
-                className={styles.moreButton}
-                title={
-                  isExpanded
-                    ? t.calendar.collapseDaySubscriptions
-                    : tpl(t.calendar.expandDaySubscriptions, { count: hiddenSubCount })
-                }
-                aria-label={
-                  isExpanded
-                    ? t.calendar.collapseDaySubscriptions
-                    : tpl(t.calendar.expandDaySubscriptions, { count: hiddenSubCount })
-                }
+                onDragStart={(e) => {
+                  if (!isEditable) return;
+                  e.stopPropagation();
+                  handleSubscriptionDragStart(subscription, e);
+                }}
+                onDragEnd={handleSubscriptionDragEnd}
+                className={`${styles.subscriptionIcon} ${isEditable ? "" : "opacity-70 cursor-default"}`}
+                title={isEditable ? subscription.name : `${subscription.name} (${readOnlySuffixLabel})`}
               >
-                {isExpanded ? `−${hiddenSubCount}` : `+${hiddenSubCount}`}
+                {renderSubscriptionIcon(subscription.name, subscription.color, "w-full h-full")}
               </div>
-            )}
-          </div>
+            );
+          })}
+
+          {hasMoreSubscriptions && (
+            <div
+              data-show-more="true"
+              onClick={(e) => { e.stopPropagation(); toggleDayExpansion(dayKey); }}
+              className={styles.moreButton}
+              title={isExpanded ? t.calendar.collapseDaySubscriptions : tpl(t.calendar.expandDaySubscriptions, { count: hiddenSubCount })}
+              aria-label={isExpanded ? t.calendar.collapseDaySubscriptions : tpl(t.calendar.expandDaySubscriptions, { count: hiddenSubCount })}
+            >
+              {isExpanded ? `−${hiddenSubCount}` : `+${hiddenSubCount}`}
+            </div>
+          )}
         </div>
       )}
 
       {dayIncomes.length > 0 && (
         <div className={styles.incomeRow}>
-          <div className="inline-flex items-center">
-            {visibleIncomes.map((income) => (
-              <div
-                key={income.id}
-                className={styles.subscriptionIcon}
-                title={tpl(t.calendar.incomeIconTitle, { name: income.name })}
-                onClick={(e) => e.stopPropagation()}
-              >
-                {renderSubscriptionIcon(income.name, null, "w-full h-full")}
-              </div>
-            ))}
+          {visibleIncomes.map((income) => (
+            <div
+              key={income.id}
+              data-income-icon="true"
+              className={`${styles.subscriptionIcon} cursor-pointer`}
+              title={tpl(t.calendar.incomeIconTitle, { name: income.name })}
+              onMouseEnter={(e) => { e.stopPropagation(); handleIncomeHover?.(income, e); }}
+              onMouseLeave={() => handleIncomeLeave?.()}
+              onClick={(e) => { e.stopPropagation(); handleIncomeClick?.(income, e); }}
+            >
+              {renderSubscriptionIcon(income.name, null, "w-full h-full")}
+            </div>
+          ))}
 
-            {hasMoreIncomes && (
-              <div
-                data-show-more="true"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  toggleDayExpansion(dayKey);
-                }}
-                className={styles.moreButton}
-                title={
-                  isExpanded
-                    ? t.calendar.collapseDaySubscriptions
-                    : tpl(t.calendar.expandDaySubscriptions, { count: hiddenIncomeCount })
-                }
-                aria-label={
-                  isExpanded
-                    ? t.calendar.collapseDaySubscriptions
-                    : tpl(t.calendar.expandDaySubscriptions, { count: hiddenIncomeCount })
-                }
-              >
-                {isExpanded ? `−${hiddenIncomeCount}` : `+${hiddenIncomeCount}`}
-              </div>
-            )}
-          </div>
+          {hasMoreIncomes && (
+            <div
+              data-show-more="true"
+              onClick={(e) => { e.stopPropagation(); toggleDayExpansion(dayKey); }}
+              className={styles.moreButton}
+              title={isExpanded ? t.calendar.collapseDaySubscriptions : tpl(t.calendar.expandDaySubscriptions, { count: hiddenIncomeCount })}
+              aria-label={isExpanded ? t.calendar.collapseDaySubscriptions : tpl(t.calendar.expandDaySubscriptions, { count: hiddenIncomeCount })}
+            >
+              {isExpanded ? `−${hiddenIncomeCount}` : `+${hiddenIncomeCount}`}
+            </div>
+          )}
         </div>
       )}
     </>

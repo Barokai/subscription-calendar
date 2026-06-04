@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Income, IncomeInput } from "@/lib/incomes";
 import { useI18n } from "@/lib/i18n";
 import { useEscapeKey } from "@/hooks/useEscapeKey";
@@ -12,6 +12,7 @@ interface IncomeManagerProps {
   onAdd: (input: IncomeInput) => Promise<void>;
   onUpdate: (id: string, input: Partial<IncomeInput>) => Promise<void>;
   onRemove: (id: string) => Promise<void>;
+  requestEdit?: Income | null;
 }
 
 const EMPTY_FORM: IncomeInput = {
@@ -30,6 +31,7 @@ const IncomeManager: React.FC<IncomeManagerProps> = ({
   onAdd,
   onUpdate,
   onRemove,
+  requestEdit,
 }) => {
   const { t } = useI18n();
   const [showForm, setShowForm] = useState(false);
@@ -47,6 +49,12 @@ const IncomeManager: React.FC<IncomeManagerProps> = ({
   }`;
 
   useEscapeKey(closeForm, showForm);
+
+  // Trigger edit form when external requestEdit prop changes
+  useEffect(() => {
+    if (requestEdit) openEdit(requestEdit);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [requestEdit]);
 
   function openAdd() {
     setForm(EMPTY_FORM);

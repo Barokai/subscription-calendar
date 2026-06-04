@@ -26,6 +26,7 @@ import SubscriptionTrends from "./subscription-trends";
 import YearlyProjection from "./YearlyProjection";
 import DaySubscriptionsOverlay from "./day-subscriptions-overlay";
 import { getSubscriptionsForDay, getIncomesForDay, DayIcons } from "./calendar-helpers";
+import IncomeDetail from "./income-detail";
 import styles from "../styles/calendar.module.css";
 import SpendingChart from "./spending-chart";
 import IncomeChart from "./income-chart";
@@ -62,6 +63,11 @@ const SubscriptionCalendar: React.FC = () => {
   const [hoverPosition, setHoverPosition] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [hoveredSubscription, setHoveredSubscription] = useState<Subscription | null>(null);
   const [selectedSubscription, setSelectedSubscription] = useState<Subscription | null>(null);
+  const [hoveredIncome, setHoveredIncome] = useState<Income | null>(null);
+  const [selectedIncome, setSelectedIncome] = useState<Income | null>(null);
+  const [incomeHoverPosition, setIncomeHoverPosition] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  const [editingIncomeExternal, setEditingIncomeExternal] = useState<Income | null>(null);
+  const incomeHoverTimeoutRef = useRef<number | null>(null);
   const hoverTimeoutRef = useRef<number | null>(null);
   const [draggedSubscription, setDraggedSubscription] = useState<Subscription | null>(null);
   const [dropTargetDayKey, setDropTargetDayKey] = useState<string | null>(null);
@@ -535,35 +541,31 @@ const SubscriptionCalendar: React.FC = () => {
     }, 0);
   };
 
-  // Function to handle clicks outside the subscription detail
+  // Function to handle clicks outside the subscription/income detail
   const handleClickOutside = useCallback(
     (event: globalThis.MouseEvent) => {
-      // Check if the click is outside both subscription icons and detail
       const target = event.target as HTMLElement;
       const isSubscriptionIcon = target.closest("[data-subscription-icon]");
       const isSubscriptionDetail = target.closest("[data-subscription-detail]");
+      const isIncomeDetail = target.closest("[data-income-detail]");
+      const isIncomeIcon = target.closest("[data-income-icon]");
       const isShowMoreButton = target.closest("[data-show-more]");
 
-      // Handle clicks outside subscription detail
-      if (
-        !isSubscriptionIcon &&
-        !isSubscriptionDetail &&
-        selectedSubscription
-      ) {
+      if (!isSubscriptionIcon && !isSubscriptionDetail && selectedSubscription) {
         setSelectedSubscription(null);
+      }
+      if (!isIncomeIcon && !isIncomeDetail && selectedIncome) {
+        setSelectedIncome(null);
+      }
+      if (!selectedSubscription && !selectedIncome) {
         document.removeEventListener("click", handleClickOutside);
       }
 
-      // Handle clicks outside of day cells (to collapse expanded days)
-      if (
-        !isShowMoreButton &&
-        !isSubscriptionIcon &&
-        expandedDayIndexes.size > 0
-      ) {
+      if (!isShowMoreButton && !isSubscriptionIcon && expandedDayIndexes.size > 0) {
         setExpandedDayIndexes(new Set());
       }
     },
-    [selectedSubscription, expandedDayIndexes]
+    [selectedSubscription, selectedIncome, expandedDayIndexes]
   );
 
   // Make sure to clean up event listener when component unmounts
@@ -586,6 +588,35 @@ const SubscriptionCalendar: React.FC = () => {
       setHoveredSubscription(null);
     }, 300);
   };
+
+  const handleIncomeHover = (income: Income, event: React.MouseEvent): void => {
+    if (selectedIncome) return;
+    if (incomeHoverTimeoutRef.current !== null) window.clearTimeout(incomeHoverTimeoutRef.current);
+    incomeHoverTimeoutRef.current = window.setTimeout(() => {
+      setHoveredIncome(income);
+      setIncomeHoverPosition({ x: event.clientX, y: event.clientY });
+    }, 100);
+  };
+
+  const handleIncomeLeave = (): void => {
+    if (selectedIncome) return;
+    if (incomeHoverTimeoutRef.current !== null) window.clearTimeout(incomeHoverTimeoutRef.current);
+    incomeHoverTimeoutRef.current = window.setTimeout(() => setHoveredIncome(null), 300);
+  };
+
+  const handleIncomeClick = (income: Income, event: React.MouseEvent): void => {
+    if (incomeHoverTimeoutRef.current !== null) window.clearTimeout(incomeHoverTimeoutRef.current);
+    setHoveredIncome(null);
+    const isDeselecting = selectedIncome?.id === income.id;
+    setSelectedIncome(isDeselecting ? null : income);
+    if (!isDeselecting) {
+      const vw = window.innerWidth;
+      const x = vw < 640 ? vw / 2 : event.clientX;
+      setIncomeHoverPosition({ x, y: event.clientY });
+      setTimeout(() => document.addEventListener("click", handleClickOutside), 0);
+    }
+  };
+
 
   const handleSubscriptionDragStart = (
     subscription: Subscription,
@@ -737,6 +768,14 @@ const SubscriptionCalendar: React.FC = () => {
       window.removeEventListener("resize", checkMobile);
     };
   }, []);
+
+  // After IncomeManager consumes the requestEdit, reset it to allow re-triggering the same income
+  useEffect(() => {
+    if (editingIncomeExternal) {
+      const timer = setTimeout(() => setEditingIncomeExternal(null), 300);
+      return () => clearTimeout(timer);
+    }
+  }, [editingIncomeExternal]);
 
   // Function to handle day click (for mobile view)
   const handleDayClick = (
@@ -946,6 +985,36 @@ const SubscriptionCalendar: React.FC = () => {
             isDarkMode={isDarkMode}
             userLocale={userLocale}
             calculateTotalSpent={calculateTotalSpent}
+            positionType="hover"
+          />
+        )}
+
+        {selectedIncome && (
+          <IncomeDetail
+            income={selectedIncome}
+            position={incomeHoverPosition}
+            isDarkMode={isDarkMode}
+            userLocale={userLocale}
+            positionType="click"
+            onClose={() => setSelectedIncome(null)}
+            onEdit={(income) => {
+              setSelectedIncome(null);
+              setEditingIncomeExternal(income);
+              setActiveTab("operations");
+            }}
+            onDelete={async (id) => {
+              await removeIncome(id);
+              setSelectedIncome(null);
+            }}
+          />
+        )}
+
+        {hoveredIncome && !selectedIncome && (
+          <IncomeDetail
+            income={hoveredIncome}
+            position={incomeHoverPosition}
+            isDarkMode={isDarkMode}
+            userLocale={userLocale}
             positionType="hover"
           />
         )}
@@ -1250,6 +1319,9 @@ const SubscriptionCalendar: React.FC = () => {
                         isSubscriptionEditable={isSubscriptionEditable}
                         readOnlySuffixLabel={t.calendar.readOnlySuffix}
                         toggleDayExpansion={toggleDayExpansion}
+                        handleIncomeHover={handleIncomeHover}
+                        handleIncomeLeave={handleIncomeLeave}
+                        handleIncomeClick={handleIncomeClick}
                       />
                     )}
 
@@ -1331,6 +1403,7 @@ const SubscriptionCalendar: React.FC = () => {
                   onAdd={addIncome}
                   onUpdate={updateIncome}
                   onRemove={removeIncome}
+                  requestEdit={editingIncomeExternal}
                 />
 
                 <CreditCardManager
