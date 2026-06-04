@@ -172,13 +172,13 @@ const SpendingChart: React.FC<SpendingChartProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60 animate-fadeIn overflow-y-auto p-4">
+    <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-black bg-opacity-60 animate-fadeIn overflow-y-auto px-4 py-6 sm:py-8">
       <div
         ref={chartRef}
-        className={`relative w-full max-w-md mx-auto p-4 sm:p-6 rounded-2xl shadow-2xl transform transition-all animate-scaleIn ${
+        className={`relative w-full max-w-md mx-auto p-4 sm:p-6 rounded-2xl shadow-2xl transform transition-all animate-scaleIn overflow-y-auto ${
           isDarkMode ? "bg-gray-800 text-white" : "bg-white text-gray-800"
-        } ${isMobile ? "max-h-[90vh] overflow-y-auto" : ""}`}
-        style={{ maxHeight: isMobile ? "90vh" : "auto" }}
+        }`}
+        style={{ maxHeight: "calc(100vh - 3rem)" }}
       >
         <button
           onClick={onClose}

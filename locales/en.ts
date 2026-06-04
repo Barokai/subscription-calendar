@@ -11,6 +11,8 @@ export const en = {
     monthlySpend: "Monthly spend",
     addSubscriptionButton: "Add subscription",
     importFromCsv: "Import from CSV",
+    resetData: "Reset data",
+    resetDemoData: "Reset demo data",
     switchToDarkMode: "Switch to dark mode",
     switchToLightMode: "Switch to light mode",
     enterDemoMode: "Enter demo mode",
@@ -30,6 +32,17 @@ export const en = {
     dayUpdateCancel: "Cancel",
     dayUpdateConfirm: "Update day",
     dayUpdateFailed: "Failed to update the billing day",
+    resetTitle: "Reset everything?",
+    resetDemoPrompt:
+      "This will reload the demo dataset and discard any local changes.",
+    resetLivePrompt:
+      "This will delete all subscriptions and income sources from your account.",
+    resetSubscriptionsLabel: "Subscriptions",
+    resetIncomeLabel: "Income sources",
+    resetCancel: "Cancel",
+    resetConfirm: "Reset now",
+    resettingLabel: "Resetting…",
+    resetFailed: "Failed to reset data",
   },
   importModal: {
     uploadTitle: "Import subscriptions",
