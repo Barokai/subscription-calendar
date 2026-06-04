@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { Subscription, SubscriptionInput } from "@/lib/subscriptions";
 import { renderSubscriptionIcon } from "./icon-utils";
 import { useI18n } from "@/lib/i18n";
+import { useEscapeKey } from "@/hooks/useEscapeKey";
 
 const CURRENCIES = ["EUR", "USD", "GBP", "CHF", "JPY", "CAD", "AUD"];
 
@@ -94,6 +95,8 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({
   const bg = isDarkMode ? "bg-gray-900 text-white" : "bg-white text-gray-800";
   const inputCls = `w-full px-3 py-2 rounded-md border text-sm ${isDarkMode ? "bg-gray-800 border-gray-600 text-white placeholder-gray-500" : "bg-gray-50 border-gray-300 text-gray-900"}`;
   const labelCls = "block text-xs font-medium mb-1 text-gray-400";
+
+  useEscapeKey(onCancel, true);
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black bg-opacity-60 p-2 sm:p-4">

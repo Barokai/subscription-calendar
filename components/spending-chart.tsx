@@ -1,6 +1,7 @@
 import React, { useRef, useEffect, useState } from "react";
 import { Subscription } from "@/lib/subscriptions";
 import { getServiceColor } from "@/lib/icons";
+import { useEscapeKey } from "@/hooks/useEscapeKey";
 
 interface SpendingChartProps {
   subscriptions: Subscription[];
@@ -63,6 +64,8 @@ const SpendingChart: React.FC<SpendingChartProps> = ({
       document.body.style.overflow = "";
     };
   }, [isVisible, onClose]);
+
+  useEscapeKey(onClose, isVisible);
 
   if (!isVisible) {
     return null;

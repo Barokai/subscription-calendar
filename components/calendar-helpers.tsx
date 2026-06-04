@@ -4,6 +4,7 @@ import { isPaymentInMonth } from "@/lib/frequency-utils";
 import styles from "../styles/calendar.module.css";
 import { parseDate } from "./date-utils";
 import { renderSubscriptionIcon } from "./icon-utils";
+import { useI18n } from "@/lib/i18n";
 
 // Maximum number of subscriptions to show before "show more" button
 const MAX_VISIBLE_ICONS = 2;
@@ -55,6 +56,7 @@ export const SubscriptionIcons: React.FC<{
   handleSubscriptionDragEnd,
   toggleDayExpansion,
 }) => {
+  const { t, tpl } = useI18n();
   const isExpanded = expandedDays.has(dayKey);
   const hasMoreSubscriptions = daySubscriptions.length > MAX_VISIBLE_ICONS;
 
@@ -101,8 +103,8 @@ export const SubscriptionIcons: React.FC<{
           </div>
         ))}
 
-        {/* Show more button when needed */}
-        {!isExpanded && hasMoreSubscriptions && (
+        {/* Toggle expansion when there are hidden subscriptions */}
+        {hasMoreSubscriptions && (
           <div
             data-show-more="true"
             onClick={(e) => {
@@ -110,11 +112,18 @@ export const SubscriptionIcons: React.FC<{
               toggleDayExpansion(dayKey);
             }}
             className={styles.moreButton}
-            title={`${hiddenCount} more subscription${
-              hiddenCount > 1 ? "s" : ""
-            }`}
+            title={
+              isExpanded
+                ? t.calendar.collapseDaySubscriptions
+                : tpl(t.calendar.expandDaySubscriptions, { count: hiddenCount })
+            }
+            aria-label={
+              isExpanded
+                ? t.calendar.collapseDaySubscriptions
+                : tpl(t.calendar.expandDaySubscriptions, { count: hiddenCount })
+            }
           >
-            +{hiddenCount}
+            {isExpanded ? `−${hiddenCount}` : `+${hiddenCount}`}
           </div>
         )}
       </div>

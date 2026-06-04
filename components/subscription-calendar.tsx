@@ -35,6 +35,7 @@ import CashFlowProjection from "./CashFlowProjection";
 import { createClient } from "@/lib/supabase/client";
 import { useI18n } from "@/lib/i18n";
 import LanguageSwitcher from "./LanguageSwitcher";
+import { useEscapeKey } from "@/hooks/useEscapeKey";
 
 interface CalendarDayObject {
   day: number;
@@ -542,6 +543,9 @@ const SubscriptionCalendar: React.FC = () => {
       setDayUpdateError(err instanceof Error ? err.message : t.calendar.dayUpdateFailed);
     }
   };
+
+  useEscapeKey(cancelDayUpdate, !!pendingDayUpdate);
+  useEscapeKey(() => setShowResetConfirm(false), showResetConfirm);
 
   const confirmResetData = async (): Promise<void> => {
     try {

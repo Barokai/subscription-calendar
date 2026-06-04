@@ -43,6 +43,8 @@ export const en = {
     resetConfirm: "Reset now",
     resettingLabel: "Resetting…",
     resetFailed: "Failed to reset data",
+    expandDaySubscriptions: "Show {count} more subscriptions",
+    collapseDaySubscriptions: "Collapse subscriptions",
   },
   importModal: {
     uploadTitle: "Import subscriptions or income",

@@ -217,16 +217,16 @@ const YearlyProjection: React.FC<YearlyProjectionProps> = ({
             const yearly = annualCost(sub);
             const pct = projectedAnnual > 0 ? (yearly / projectedAnnual) * 100 : 0;
             return (
-              <div key={sub.id} className="flex items-center gap-2">
-                <div className={`text-sm flex-1 min-w-0 ${subtext}`}>
+              <div key={sub.id} className="grid grid-cols-[minmax(0,1fr)_auto_auto_minmax(3.5rem,6rem)] gap-2 items-center">
+                <div className={`text-sm min-w-0 ${subtext}`}>
                   <span className="truncate">{sub.name}</span>
                   {sub.category && <span className={`ml-1.5 text-xs ${muted}`}>· {sub.category}</span>}
                 </div>
-                <span className={`text-xs ${muted} w-20 text-right`}>
+                <span className={`text-xs ${muted} whitespace-nowrap text-right`}>
                   {sub.frequency !== "yearly" ? tpl(t.yearlyProjection.costPerFrequency, { amount: fmtExact(sub.amount), frequency: sub.frequency }) : ""}
                 </span>
-                <span className={`text-sm font-medium w-20 text-right ${text}`}>{tpl(t.yearlyProjection.costPerYear, { amount: fmt(yearly) })}</span>
-                <div className={`w-16 h-1.5 rounded-full overflow-hidden ${isDarkMode ? "bg-gray-700" : "bg-gray-200"}`}>
+                <span className={`text-sm font-medium whitespace-nowrap text-right ${text}`}>{tpl(t.yearlyProjection.costPerYear, { amount: fmt(yearly) })}</span>
+                <div className={`h-1.5 rounded-full overflow-hidden ${isDarkMode ? "bg-gray-700" : "bg-gray-200"}`}>
                   <div className="h-full bg-blue-500 rounded-full" style={{ width: `${pct}%` }} />
                 </div>
               </div>
