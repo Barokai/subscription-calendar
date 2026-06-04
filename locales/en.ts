@@ -208,6 +208,8 @@ export const en = {
   },
   overlay: {
     closeButton: "Close",
+    expensesLabel: "Expenses",
+    incomeLabel: "Income",
   },
   income: {
     title: "Income Sources",

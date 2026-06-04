@@ -126,6 +126,14 @@
   position: relative;
 }
 
+/* When a day is expanded: drop the aspect-ratio trick, let height grow */
+.calendarDayExpanded {
+  height: auto;
+  padding-bottom: 0;
+  min-height: 5rem;
+  position: relative;
+}
+
 .calendarDayContent {
   position: absolute;
   inset: 0;
@@ -133,6 +141,15 @@
   flex-direction: column;
   padding: 0.5rem;
   overflow: hidden; /* clip icon overflow at cell boundary */
+}
+
+/* Expanded content: switch from absolute fill to normal flow */
+.calendarDayContentExpanded {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  padding: 0.5rem;
+  overflow: visible;
 }
 
 .subscriptionsContainer {
