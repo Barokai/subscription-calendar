@@ -188,7 +188,7 @@ const IncomeManager: React.FC<IncomeManagerProps> = ({
       {/* Form modal */}
       {showForm && (
         <ModalBackdrop onClose={closeForm} panelClassName="max-w-lg">
-          <div className={`w-full p-6 ${bg}`}>
+          <div className={`w-full p-6 ${bg}`} data-component="income-manager-form">
             <h3 className="text-lg font-bold mb-4">
               {editId ? t.income.editTitle : t.income.addTitle}
             </h3>

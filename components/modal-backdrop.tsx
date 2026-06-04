@@ -34,6 +34,7 @@ const ModalBackdrop: React.FC<ModalBackdropProps> = ({
         backdropFilter: "blur(3px)",
       }}
       onClick={onClose}
+      data-component="modal-backdrop"
     >
       <div
         className={`w-full ${panelClassName} rounded-t-2xl sm:rounded-2xl shadow-2xl overflow-y-auto`}

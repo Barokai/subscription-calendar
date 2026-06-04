@@ -50,6 +50,7 @@ const IncomeDetail: React.FC<IncomeDetailProps> = ({
       }`}
       style={{ left: `${position.x}px`, top: `${position.y}px`, border: `2px solid ${color}`, transform }}
       data-income-detail="true"
+      data-component="income-detail"
     >
       {positionType === "click" && onClose && (
         <button
