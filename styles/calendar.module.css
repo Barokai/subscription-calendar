@@ -74,24 +74,24 @@
   z-index: 5;
 }
 
-/* Mobile: smaller icons */
+/* Mobile: much smaller icons so they fit in tiny cells */
 @media (max-width: 640px) {
   .subscriptionIcon {
-    width: 1rem;
-    height: 1rem;
-    font-size: 0.6rem;
-    margin: 0.08rem 0.08rem 0.08rem -0.2rem;
+    width: 0.65rem;
+    height: 0.65rem;
+    font-size: 0.45rem;
+    margin: 0.05rem 0.05rem 0.05rem -0.1rem;
   }
 
   .subscriptionIcon:first-child {
-    margin-left: 0.08rem;
+    margin-left: 0.05rem;
   }
 
   .moreButton {
-    width: 1rem;
-    height: 1rem;
-    font-size: 0.6rem;
-    margin: 0.08rem 0.08rem 0.08rem -0.2rem;
+    width: 0.75rem;
+    height: 0.75rem;
+    font-size: 0.45rem;
+    margin: 0.05rem 0.05rem 0.05rem -0.1rem;
   }
 }
 
