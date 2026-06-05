@@ -20,7 +20,7 @@
     "simple-icons": "^16.20.0"
   },
   "devDependencies": {
-    "@eslint/compat": "^1.2.7",
+    "@eslint/compat": "^2.0.0",
     "@eslint/eslintrc": "^3",
     "@tailwindcss/postcss": "^4.0.14",
     "@types/node": "^22.0.0",
