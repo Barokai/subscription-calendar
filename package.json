@@ -24,7 +24,7 @@
     "@eslint/eslintrc": "^3",
     "@tailwindcss/postcss": "^4.0.14",
     "@types/node": "^25.0.0",
-    "@types/react": "19.2.16",
+    "@types/react": "19.2.17",
     "@types/react-dom": "19.2.3",
     "@vitest/coverage-v8": "^4.1.7",
     "eslint": "^9.0.0",
@@ -39,7 +39,7 @@
   },
   "packageManager": "yarn@1.22.22+sha1.ac34549e6aa8e7ead463a7407e1c7390f61a6610",
   "overrides": {
-    "@types/react": "19.2.16",
+    "@types/react": "19.2.17",
     "@types/react-dom": "19.2.3"
   }
 }
