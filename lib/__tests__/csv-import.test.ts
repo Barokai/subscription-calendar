@@ -266,7 +266,9 @@ describe("parsePivotCsv — German format", () => {
     const rows = buildGermanRows([
       ["", "Strom", "Monatlich", "150,00 €", "150,00 €", "150,00 €", "150,00 €", "150,00 €", "150,00 €", "150,00 €", "150,00 €", "150,00 €", "150,00 €", "150,00 €", "150,00 €", "", ""],
     ]);
-    expect(parsePivotCsv(rows)[0].frequency).toBe("monthly");
+    const [r] = parsePivotCsv(rows);
+    expect(r.frequency).toBe("monthly");
+    expect(r.hasExplicitFrequency).toBe(true);
   });
 
   it("maps Quartal → quarterly", () => {
@@ -282,7 +284,32 @@ describe("parsePivotCsv — German format", () => {
     ]);
     const [r] = parsePivotCsv(rows);
     expect(r.frequency).toBe("yearly");
+    expect(r.hasExplicitFrequency).toBe(true);
     expect(r.endDate).toBeNull(); // explicit "Jährlich" — not ended even though only one payment in the window
+  });
+
+  it("keeps explicit recurring frequencies like yearly and quarterly", () => {
+    const rows = buildGermanRows([
+      ["", "Bonus", "Jährlich", "", "", "", "", "500,00 €", "", "", "", "", "", "", "", "", ""],
+      ["", "Allowance", "Quartal", "120,00 €", "", "", "120,00 €", "", "", "120,00 €", "", "", "120,00 €", "", "", "", ""],
+    ]);
+    const result = parsePivotCsv(rows);
+    expect(result[0].frequency).toBe("yearly");
+    expect(result[0].hasExplicitFrequency).toBe(true);
+    expect(result[1].frequency).toBe("quarterly");
+    expect(result[1].hasExplicitFrequency).toBe(true);
+  });
+
+  it("captures raw month occurrences for non-explicit frequency text", () => {
+    const rows = buildGermanRows([
+      ["", "Urlaubsgeld", "Juni/Nov", "", "", "", "", "", "4.410,13 €", "", "", "", "", "4.329,53 €", "", "", ""],
+    ]);
+    const [r] = parsePivotCsv(rows);
+    expect(r.hasExplicitFrequency).toBe(false);
+    expect(r.rawFrequency).toBe("Juni/Nov");
+    expect(r.monthOccurrences).toHaveLength(2);
+    expect(r.monthOccurrences[0]).toMatchObject({ date: `${new Date().getFullYear()}-06-01`, amount: 4410.13 });
+    expect(r.monthOccurrences[1]).toMatchObject({ date: `${new Date().getFullYear()}-11-01`, amount: 4329.53 });
   });
 
   it("infers yearly when no frequency given and amount appears exactly once", () => {

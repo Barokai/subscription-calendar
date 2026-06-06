@@ -72,6 +72,21 @@ function pivotToIncomeInput(p: PivotRow, dayOfMonth: number): IncomeInput {
   };
 }
 
+function pivotToIncomeInputs(p: PivotRow, dayOfMonth: number): IncomeInput[] {
+  if (p.hasExplicitFrequency) {
+    return [pivotToIncomeInput(p, dayOfMonth)];
+  }
+
+  return p.monthOccurrences.map((occurrence) => ({
+    name: p.name,
+    amount: occurrence.amount,
+    currency: p.currency,
+    dayOfMonth,
+    startDate: occurrence.date,
+    endDate: occurrence.date,
+  }));
+}
+
 const ImportModal: React.FC<ImportModalProps> = ({
   isDarkMode,
   existingSubscriptions,
@@ -212,7 +227,7 @@ const ImportModal: React.FC<ImportModalProps> = ({
       if (format === "pivot" && pivotType === "income") {
         const inputs: IncomeInput[] = pivotRows
           .filter((_, i) => selected.has(i))
-          .map((p) => pivotToIncomeInput(p, day));
+          .flatMap((p) => pivotToIncomeInputs(p, day));
         if (onImportIncomes) { await onImportIncomes(inputs); }
       } else {
         if (importPaymentMethod === "credit_card" && !importCreditCardId) {
