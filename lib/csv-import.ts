@@ -263,11 +263,14 @@ export interface PivotRow {
   name: string;
   category: string;
   frequency: string;
+  rawFrequency: string;
+  hasExplicitFrequency: boolean;
   averageAmount: number;
   currency: string;
   startDate: string; // ISO YYYY-MM-DD
   endDate: string | null;
   dayOfMonth: number;
+  monthOccurrences: { date: string; amount: number; monthIndex: number }[];
   hasPriceVariance: boolean;
   minAmount: number;
   maxAmount: number;
@@ -450,11 +453,18 @@ export function parsePivotCsv(rows: string[][]): PivotRow[] {
       name: rawName,
       category,
       frequency,
+      rawFrequency: rawFreq.trim(),
+      hasExplicitFrequency,
       averageAmount: avgAmount,
       currency,
       startDate: firstMonth.toISOString().slice(0, 10),
       endDate: isEnded ? lastMonth.toISOString().slice(0, 10) : null,
       dayOfMonth: 1,
+      monthOccurrences: sortedMonths.map((m) => ({
+        date: m.date.toISOString().slice(0, 10),
+        amount: m.amount,
+        monthIndex: m.monthIndex,
+      })),
       hasPriceVariance,
       minAmount,
       maxAmount,
