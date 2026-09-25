@@ -26,7 +26,7 @@
     "@types/node": "^25.0.0",
     "@types/react": "19.2.17",
     "@types/react-dom": "19.2.3",
-    "@vitest/coverage-v8": "^4.1.7",
+    "@vitest/coverage-v8": "^5.0.0",
     "eslint": "^10.0.0",
     "eslint-config-next": "16.2.7",
     "eslint-plugin-react": "^7.33.2",
@@ -35,7 +35,7 @@
     "sort-package-json": "^4.0.0",
     "tailwindcss": "^4.0.14",
     "typescript": "^5.3.3",
-    "vitest": "^4.1.7"
+    "vitest": "^5.0.0"
   },
   "packageManager": "yarn@1.22.22+sha1.ac34549e6aa8e7ead463a7407e1c7390f61a6610",
   "overrides": {
