@@ -33,7 +33,7 @@ interface I18nContextValue {
 const I18nContext = createContext<I18nContextValue | null>(null);
 
 function detectBrowserLanguage(): Language {
-  if (typeof navigator === "undefined") return "en";
+  if (typeof navigator === "undefined") {return "en";}
   const lang = navigator.language?.toLowerCase() ?? "";
   return lang.startsWith("de") ? "de" : "en";
 }
@@ -75,6 +75,6 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
 
 export function useI18n(): I18nContextValue {
   const ctx = useContext(I18nContext);
-  if (!ctx) throw new Error("useI18n must be used inside <I18nProvider>");
+  if (!ctx) {throw new Error("useI18n must be used inside <I18nProvider>");}
   return ctx;
 }

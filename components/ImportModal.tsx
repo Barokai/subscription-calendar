@@ -254,7 +254,7 @@ const ImportModal: React.FC<ImportModalProps> = ({
   };
 
   const confirmLabel = () => {
-    if (saving) return t.importModal.importingLabel;
+    if (saving) {return t.importModal.importingLabel;}
     if (format === "pivot" && pivotType === "income") {
       return selected.size !== 1
         ? tpl(t.importModal.importIncomeButtonPlural, { count: selected.size })

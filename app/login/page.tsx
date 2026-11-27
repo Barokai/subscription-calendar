@@ -142,6 +142,8 @@ export default function LoginPage() {
 
         <div className="w-full border-t border-gray-800 pt-4 flex flex-col items-center gap-2">
           <p className="text-gray-500 text-xs">{t.login.noAccount}</p>
+          {/* Full page load on purpose: the proxy reads ?demo=true on the request. */}
+          {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
           <a
             href="/?demo=true"
             className="w-full text-center py-2 px-4 rounded-lg border border-gray-700 text-gray-400 hover:text-white hover:border-gray-500 transition-colors text-sm"

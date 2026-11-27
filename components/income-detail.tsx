@@ -109,7 +109,7 @@ const IncomeDetail: React.FC<IncomeDetailProps> = ({
           {onDelete && (
             <button
               onClick={() => {
-                if (window.confirm(t.income.deleteConfirm)) onDelete(income.id);
+                if (window.confirm(t.income.deleteConfirm)) {onDelete(income.id);}
               }}
               className="px-3 py-1.5 text-xs rounded-md border border-red-700 text-red-400 hover:bg-red-900/40 transition-colors"
             >

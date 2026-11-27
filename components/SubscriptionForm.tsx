@@ -228,7 +228,7 @@ const SubscriptionForm: React.FC<SubscriptionFormProps> = ({
                 onChange={(e) => {
                   const nextMethod = e.target.value as "bank" | "credit_card";
                   setPaymentMethod(nextMethod);
-                  if (nextMethod === "bank") setCreditCardId("");
+                  if (nextMethod === "bank") {setCreditCardId("");}
                 }}
               >
                 <option value="bank">{t.subscriptionForm.paymentMethodBank}</option>
