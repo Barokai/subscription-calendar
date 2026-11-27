@@ -299,7 +299,7 @@ const SubscriptionCalendar: React.FC = () => {
       const start = parseDate(sub.startDate, userLocale);
       if (isPaymentInMonth(sub.frequency, start, month, year)) {
         const d = sub.dayOfMonth;
-        if (!map[d]) map[d] = { expenseTotal: 0, incomeTotal: 0 };
+        if (!map[d]) {map[d] = { expenseTotal: 0, incomeTotal: 0 };}
         map[d].expenseTotal += sub.amount;
       }
     });
@@ -308,13 +308,13 @@ const SubscriptionCalendar: React.FC = () => {
       const start = parseDate(inc.startDate, userLocale);
       const startMonth = start.getMonth();
       const startYear = start.getFullYear();
-      if (year < startYear || (year === startYear && month < startMonth)) return;
+      if (year < startYear || (year === startYear && month < startMonth)) {return;}
       if (inc.endDate) {
         const end = parseDate(inc.endDate, userLocale);
-        if (year > end.getFullYear() || (year === end.getFullYear() && month > end.getMonth())) return;
+        if (year > end.getFullYear() || (year === end.getFullYear() && month > end.getMonth())) {return;}
       }
       const d = inc.dayOfMonth;
-      if (!map[d]) map[d] = { expenseTotal: 0, incomeTotal: 0 };
+      if (!map[d]) {map[d] = { expenseTotal: 0, incomeTotal: 0 };}
       map[d].incomeTotal += inc.amount;
     });
 
@@ -324,8 +324,8 @@ const SubscriptionCalendar: React.FC = () => {
   const { maxExpenseDay, maxIncomeDay } = useMemo(() => {
     let maxE = 0, maxI = 0;
     Object.values(dayFinancials).forEach(({ expenseTotal, incomeTotal }) => {
-      if (expenseTotal > maxE) maxE = expenseTotal;
-      if (incomeTotal > maxI) maxI = incomeTotal;
+      if (expenseTotal > maxE) {maxE = expenseTotal;}
+      if (incomeTotal > maxI) {maxI = incomeTotal;}
     });
     return { maxExpenseDay: maxE, maxIncomeDay: maxI };
   }, [dayFinancials]);
@@ -590,8 +590,8 @@ const SubscriptionCalendar: React.FC = () => {
   };
 
   const handleIncomeHover = (income: Income, event: React.MouseEvent): void => {
-    if (selectedIncome) return;
-    if (incomeHoverTimeoutRef.current !== null) window.clearTimeout(incomeHoverTimeoutRef.current);
+    if (selectedIncome) {return;}
+    if (incomeHoverTimeoutRef.current !== null) {window.clearTimeout(incomeHoverTimeoutRef.current);}
     incomeHoverTimeoutRef.current = window.setTimeout(() => {
       setHoveredIncome(income);
       setIncomeHoverPosition({ x: event.clientX, y: event.clientY });
@@ -599,13 +599,13 @@ const SubscriptionCalendar: React.FC = () => {
   };
 
   const handleIncomeLeave = (): void => {
-    if (selectedIncome) return;
-    if (incomeHoverTimeoutRef.current !== null) window.clearTimeout(incomeHoverTimeoutRef.current);
+    if (selectedIncome) {return;}
+    if (incomeHoverTimeoutRef.current !== null) {window.clearTimeout(incomeHoverTimeoutRef.current);}
     incomeHoverTimeoutRef.current = window.setTimeout(() => setHoveredIncome(null), 300);
   };
 
   const handleIncomeClick = (income: Income, event: React.MouseEvent): void => {
-    if (incomeHoverTimeoutRef.current !== null) window.clearTimeout(incomeHoverTimeoutRef.current);
+    if (incomeHoverTimeoutRef.current !== null) {window.clearTimeout(incomeHoverTimeoutRef.current);}
     setHoveredIncome(null);
     const isDeselecting = selectedIncome?.id === income.id;
     setSelectedIncome(isDeselecting ? null : income);

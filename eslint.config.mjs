@@ -1,24 +1,27 @@
-import path from "node:path";
-import { fileURLToPath } from "url";
-import { FlatCompat } from "@eslint/eslintrc";
+import { defineConfig } from "eslint/config";
 import { includeIgnoreFile } from "@eslint/compat";
+import nextCoreWebVitals from "eslint-config-next/core-web-vitals";
+import nextTypescript from "eslint-config-next/typescript";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const gitignorePath = path.resolve(__dirname, ".gitignore");
+const gitignorePath = new URL(".gitignore", import.meta.url);
 
-const compat = new FlatCompat({
-  baseDirectory: __dirname,
-});
-
-const eslintConfig = [
-  ...compat.extends("next/core-web-vitals", "next/typescript"),
-  includeIgnoreFile(gitignorePath),
+export default defineConfig([
+  includeIgnoreFile(gitignorePath.pathname.replace(/^\/([A-Za-z]:)/, "$1")),
+  ...nextCoreWebVitals,
+  ...nextTypescript,
   {
+    // eslint-plugin-react 7.x can't auto-detect the React version under ESLint 10
+    // (it calls the removed context.getFilename()), so pin it explicitly.
+    settings: {
+      react: { version: "19.2" },
+    },
     rules: {
-      "curly": "error"
-    }
-  }
-];
-
-export default eslintConfig;
+      curly: "error",
+      // New in eslint-plugin-react-hooks 7. The existing code predates them (data loading and
+      // localStorage reads in effects, the click-outside listener in subscription-calendar.tsx).
+      // Kept as warnings so CI stays useful; refactor and switch back to "error".
+      "react-hooks/set-state-in-effect": "warn",
+      "react-hooks/immutability": "warn",
+    },
+  },
+]);

@@ -53,8 +53,8 @@ const IncomeManager: React.FC<IncomeManagerProps> = ({
 
   // Trigger edit form when external requestEdit prop changes
   useEffect(() => {
-    if (requestEdit) openEdit(requestEdit);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    if (requestEdit) {openEdit(requestEdit);}
+     
   }, [requestEdit]);
 
   function openAdd() {

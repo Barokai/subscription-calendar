@@ -72,7 +72,7 @@ export function detectColumns(headers: string[]): ColumnMapping | null {
 
 function parseAmount(raw: string): number {
   // Strip currency symbols and whitespace
-  let s = raw.replace(/[€$£¥\s]/g, "").trim();
+  const s = raw.replace(/[€$£¥\s]/g, "").trim();
   if (!s) { return NaN; }
   // European with thousands separator: "1.290,88"
   if (/^\d{1,3}(\.\d{3})+,\d{1,2}$/.test(s)) {

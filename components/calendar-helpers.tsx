@@ -32,14 +32,14 @@ export const getIncomesForDay = (
   currentYear: number
 ): Income[] => {
   return incomes.filter((inc) => {
-    if (inc.dayOfMonth !== day) return false;
+    if (inc.dayOfMonth !== day) {return false;}
     const start = parseDate(inc.startDate, userLocale);
     const startMonth = start.getMonth();
     const startYear = start.getFullYear();
-    if (currentYear < startYear || (currentYear === startYear && currentMonth < startMonth)) return false;
+    if (currentYear < startYear || (currentYear === startYear && currentMonth < startMonth)) {return false;}
     if (inc.endDate) {
       const end = parseDate(inc.endDate, userLocale);
-      if (currentYear > end.getFullYear() || (currentYear === end.getFullYear() && currentMonth > end.getMonth())) return false;
+      if (currentYear > end.getFullYear() || (currentYear === end.getFullYear() && currentMonth > end.getMonth())) {return false;}
     }
     return true;
   });
@@ -114,7 +114,7 @@ export const DayIcons: React.FC<{
                   handleSubscriptionClick(subscription, e);
                 }}
                 onDragStart={(e) => {
-                  if (!isEditable) return;
+                  if (!isEditable) {return;}
                   e.stopPropagation();
                   handleSubscriptionDragStart(subscription, e);
                 }}
